@@ -775,7 +775,3 @@ window.toggleTheme = toggleTheme;
 window.fillOper = fillOper;
 window.fillMaq = fillMaq;
 window.updateParadaDesc = updateParadaDesc;
-
-// Init
-window.onload(); 
-}
