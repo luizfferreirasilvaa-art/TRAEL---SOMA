@@ -118,7 +118,7 @@ async function renderConfigTable() {
   if (lPar) {
     lPar.innerHTML = STATE.paradas.map(p => `
       <div class="config-row">
-        <span><strong>${p.cod}</strong> - ${p.descricao} <small>(${p.tipo})</small></span>
+        <span><strong>${p.cod}</strong> - ${p.desc} <small>(${p.tipo})</small></span>
         <button class="btn-del" onclick="removeConfig('paradas_motivos', '${p.id}')">×</button>
       </div>
     `).join('');
@@ -139,7 +139,7 @@ async function addConfig(type) {
     table = 'paradas_motivos';
     payload = { 
       cod: document.getElementById('new-par-cod').value, 
-      descricao: document.getElementById('new-par-desc').value.toUpperCase(),
+      "desc": document.getElementById('new-par-desc').value.toUpperCase(),
       tipo: document.getElementById('new-par-tipo').value
     };
   }
@@ -329,7 +329,7 @@ function fillParadaRow(el) {
   const tr = el.parentElement.parentElement;
   const cod = el.value;
   const p = STATE.paradas.find(x => x.cod === cod);
-  tr.querySelector('.parada-desc').value = p ? p.descricao : '';
+  tr.querySelector('.parada-desc').value = p ? p.desc : '';
   tr.querySelector('.parada-tipo').value = p ? p.tipo : '';
   calcResumo();
 }
@@ -403,8 +403,17 @@ async function saveRegisto() {
 
   // Common data
   const base = {
-    data, mes, turno, cod_oper: codOper, desc_oper: descOper, cod_maq: codMaq, desc_maq: descMaq,
-    h_inicio: hInicio, h_fim: hFim, h_disponivel: hDisp, h_programada: hProg
+    data, 
+    mes: parseInt(mes) || null, 
+    turno, 
+    cod_oper: codOper, 
+    desc_oper: descOper, 
+    cod_maq: codMaq, 
+    desc_maq: descMaq,
+    h_inicio: hInicio || null, 
+    h_fim: hFim || null, 
+    h_disponivel: parseFloat(hDisp) || 0, 
+    h_programada: parseFloat(hProg) || 0
   };
 
   // If we have production rows
@@ -429,7 +438,7 @@ async function saveRegisto() {
       ...base,
       cod_parada: tr.querySelector('.parada-cod').value,
       desc_parada: tr.querySelector('.parada-desc').value,
-      h_parada: tr.querySelector('.parada-horas').value,
+      h_parada: parseFloat(tr.querySelector('.parada-horas').value) || 0,
       tipo_parada: tr.querySelector('.parada-tipo').value,
       tipo_registro: 'PARADA'
     });
