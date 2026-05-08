@@ -1,6 +1,12 @@
 -- SOMA: Inteligência em Cronoanálise
 -- Schema de Banco de Dados (Supabase/PostgreSQL)
 
+-- Limpeza para Reinstalação (CUIDADO: Apaga dados existentes)
+DROP TABLE IF EXISTS registros_cronoanalise;
+DROP TABLE IF EXISTS paradas_motivos;
+DROP TABLE IF EXISTS maquinas;
+DROP TABLE IF EXISTS operadores;
+
 -- 1. Tabela de Operadores
 CREATE TABLE operadores (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -65,7 +71,7 @@ ALTER TABLE maquinas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE paradas_motivos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE registros_cronoanalise ENABLE ROW LEVEL SECURITY;
 
--- Políticas de acesso público para o MVP (Ajuste para Auth em Produção)
+-- Políticas de acesso público para o MVP
 CREATE POLICY "Public Select Operadores" ON operadores FOR SELECT USING (true);
 CREATE POLICY "Public Insert Operadores" ON operadores FOR INSERT WITH CHECK (true);
 CREATE POLICY "Public Delete Operadores" ON operadores FOR DELETE USING (true);
@@ -86,18 +92,15 @@ CREATE POLICY "Public Delete Registros" ON registros_cronoanalise FOR DELETE USI
 INSERT INTO operadores (cod, nome) VALUES 
 ('OP01', 'João Silva'),
 ('OP02', 'Maria Oliveira'),
-('OP03', 'Carlos Souza')
-ON CONFLICT (cod) DO NOTHING;
+('OP03', 'Carlos Souza');
 
 INSERT INTO maquinas (cod, nome) VALUES 
 ('MQ01', 'Prensa Hidráulica 01'),
 ('MQ02', 'Bobinadeira Automática'),
-('MQ03', 'Célula de Solda')
-ON CONFLICT (cod) DO NOTHING;
+('MQ03', 'Célula de Solda');
 
 INSERT INTO paradas_motivos (cod, "desc", tipo) VALUES 
 ('P01', 'Falta de Matéria-prima', 'NÃO PROG'),
 ('P02', 'Manutenção Preventiva', 'PROG'),
 ('P03', 'Troca de Ferramenta', 'PROG'),
-('P04', 'Queda de Energia', 'NÃO PROG')
-ON CONFLICT (cod) DO NOTHING;
+('P04', 'Queda de Energia', 'NÃO PROG');
