@@ -271,85 +271,175 @@ function showToast(msg, type) {
   setTimeout(() => t.className = '', 3000);
 }
 
+// ───────── DIGITADOR LOGIC ─────────
+function updateMonth() {
+  const dateStr = document.getElementById('f-data').value;
+  if (dateStr) {
+    const d = new Date(dateStr);
+    document.getElementById('f-mes').value = d.getUTCMonth() + 1;
+  }
+}
+
+function calcTurnHours() {
+  const start = document.getElementById('f-h-inicio').value;
+  const end = document.getElementById('f-h-fim').value;
+  if (start && end) {
+    const s = start.split(':');
+    const e = end.split(':');
+    const diff = (parseInt(e[0]) + parseInt(e[1])/60) - (parseInt(s[0]) + parseInt(s[1])/60);
+    document.getElementById('f-hdisp').value = Math.max(0, diff).toFixed(2);
+    calcResumo();
+  }
+}
+
 function addPecaRow() {
   const tbody = document.getElementById('pecas-body');
   if (!tbody) return;
   const tr = document.createElement('tr');
   tr.innerHTML = `
-    <td><input type="text" placeholder="Cód. Peça" class="peca-cod"></td>
-    <td><input type="number" placeholder="Qtd" class="peca-qtd" oninput="updateRow(this)"></td>
-    <td><input type="number" placeholder="Padrão" class="peca-padrao" oninput="updateRow(this)"></td>
-    <td>
-      <select class="peca-comp">
-        <option value="Manual">Manual</option>
-        <option value="Máquina">Máquina</option>
-      </select>
-    </td>
-    <td class="row-efic">0%</td>
-    <td class="row-status">-</td>
-    <td><button class="btn btn-danger btn-sm" onclick="this.parentElement.parentElement.remove()">×</button></td>
+    <td><input type="text" placeholder="ex: 3185" class="peca-cod"></td>
+    <td><input type="number" value="0" class="peca-qtd" oninput="calcResumo()"></td>
+    <td><input type="number" value="0.00" step="0.01" class="peca-padrao" oninput="calcResumo()"></td>
+    <td class="row-hprod">0.0000</td>
+    <td><button class="btn-del" onclick="this.parentElement.parentElement.remove(); calcResumo();">×</button></td>
   `;
   tbody.appendChild(tr);
 }
 
-function updateRow(el) {
+function addParadaRow() {
+  const tbody = document.getElementById('paradas-body');
+  if (!tbody) return;
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td>
+      <select class="parada-cod" onchange="fillParadaRow(this)">
+        <option value="">-</option>
+        ${STATE.paradas.map(p => `<option value="${p.cod}">${p.cod}</option>`).join('')}
+      </select>
+    </td>
+    <td><input type="text" class="parada-desc" readonly></td>
+    <td><input type="number" value="0.00" step="0.01" class="parada-horas" oninput="calcResumo()"></td>
+    <td><input type="text" class="parada-tipo" readonly></td>
+    <td><button class="btn-del" onclick="this.parentElement.parentElement.remove(); calcResumo();">×</button></td>
+  `;
+  tbody.appendChild(tr);
+}
+
+function fillParadaRow(el) {
   const tr = el.parentElement.parentElement;
-  const qtd = parseFloat(tr.querySelector('.peca-qtd').value) || 0;
-  const padrao = parseFloat(tr.querySelector('.peca-padrao').value) || 0;
-  
-  const efic = calculateEfficiency(qtd, padrao);
-  tr.querySelector('.row-efic').textContent = (efic > 0 ? efic.toFixed(1) : '0') + '%';
-  tr.querySelector('.row-status').innerHTML = getStatusLabel(efic);
+  const cod = el.value;
+  const p = STATE.paradas.find(x => x.cod === cod);
+  tr.querySelector('.parada-desc').value = p ? p.descricao : '';
+  tr.querySelector('.parada-tipo').value = p ? p.tipo : '';
+  calcResumo();
+}
+
+function calcResumo() {
+  // Production
+  let totalQtd = 0;
+  let totalHProd = 0;
+  document.querySelectorAll('#pecas-body tr').forEach(tr => {
+    const qtd = parseFloat(tr.querySelector('.peca-qtd').value) || 0;
+    const pad = parseFloat(tr.querySelector('.peca-padrao').value) || 0;
+    const hProd = pad > 0 ? qtd / pad : 0;
+    tr.querySelector('.row-hprod').textContent = hProd.toFixed(4);
+    totalQtd += qtd;
+    totalHProd += hProd;
+  });
+
+  // Stoppages
+  let totalHPar = 0;
+  document.querySelectorAll('#paradas-body tr').forEach(tr => {
+    const h = parseFloat(tr.querySelector('.parada-horas').value) || 0;
+    totalHPar += h;
+  });
+
+  const hDisp = parseFloat(document.getElementById('f-hdisp').value) || 0;
+  const hProg = parseFloat(document.getElementById('f-hprog').value) || 0;
+  const hTrab = Math.max(0, hProg - totalHPar);
+  const efic = hTrab > 0 ? (totalHProd / hTrab) * 100 : 0;
+  const util = hProg > 0 ? (hTrab / hProg) * 100 : 0;
+
+  document.getElementById('res-qtd').textContent = totalQtd;
+  document.getElementById('res-hprod').textContent = totalHProd.toFixed(4);
+  document.getElementById('res-hpar').textContent = totalHPar.toFixed(4);
+  document.getElementById('res-htrab').textContent = hTrab.toFixed(4);
+  document.getElementById('res-efic').textContent = efic.toFixed(1) + '%';
+  document.getElementById('res-util').textContent = util.toFixed(1) + '%';
 }
 
 async function saveRegisto() {
   const data = document.getElementById('f-data').value;
-  const hDisp = parseFloat(document.getElementById('f-hdisp').value) || 0;
+  const mes = document.getElementById('f-mes').value;
   const turno = document.getElementById('f-turno').value;
   const codOper = document.getElementById('f-codoper').value;
+  const descOper = document.getElementById('f-descoper').value;
   const codMaq = document.getElementById('f-codmaq').value;
-  
+  const descMaq = document.getElementById('f-descmaq').value;
+  const hInicio = document.getElementById('f-h-inicio').value;
+  const hFim = document.getElementById('f-h-fim').value;
+  const hDisp = document.getElementById('f-hdisp').value;
+  const hProg = document.getElementById('f-hprog').value;
+
   if (!data || !codOper || !codMaq) {
-    showToast('Atenção: Informação de campo incompleta!', 'err');
-    return;
-  }
-  
-  const rows = document.querySelectorAll('#pecas-body tr');
-  if (rows.length === 0) {
-    showToast('Adicione ao menos um registro de produção!', 'err');
+    showToast('Atenção: Cabeçalho incompleto!', 'err');
     return;
   }
 
-  let totalHProd = 0;
-  const registros = Array.from(rows).map(tr => {
+  const pecaRows = document.querySelectorAll('#pecas-body tr');
+  const paradaRows = document.querySelectorAll('#paradas-body tr');
+
+  // We will save one record per production row, or just one if no production but has stoppage
+  // However, the rule says "Save on Supabase". Let's follow the standard of one row per cycle if possible.
+  // For now, let's save the summarized turn to 'registros_cronoanalise' or similar.
+  // To keep it equal to the spreadsheet "Digitador" view, we save each production line.
+
+  const records = [];
+  
+  if (pecaRows.length === 0 && paradaRows.length === 0) {
+    showToast('Adicione ao menos um registro!', 'err');
+    return;
+  }
+
+  // Common data
+  const base = {
+    data, mes, turno, cod_oper: codOper, desc_oper: descOper, cod_maq: codMaq, desc_maq: descMaq,
+    h_inicio: hInicio, h_fim: hFim, h_disponivel: hDisp, h_programada: hProg
+  };
+
+  // If we have production rows
+  pecaRows.forEach(tr => {
     const qtd = parseFloat(tr.querySelector('.peca-qtd').value) || 0;
-    const padrao = parseFloat(tr.querySelector('.peca-padrao').value) || 0;
-    const hProd = padrao > 0 ? qtd / padrao : 0;
-    totalHProd += hProd;
-    
-    const efic = calculateEfficiency(qtd, padrao);
-    return {
-      data,
-      h_disponivel: hDisp,
-      turno,
-      cod_oper: codOper,
-      cod_maq: codMaq,
+    const pad = parseFloat(tr.querySelector('.peca-padrao').value) || 0;
+    const hProd = pad > 0 ? qtd / pad : 0;
+    records.push({
+      ...base,
       cod_peca: tr.querySelector('.peca-cod').value,
       qtd,
-      tp_padrao: padrao,
-      componente: tr.querySelector('.peca-comp').value,
+      tp_padrao: pad,
       h_produtiva: hProd,
-      eficiencia: efic,
-      status: padrao === 0 ? 'SEM_PADRAO' : (efic >= 95 ? 'PADRAO' : (efic >= 80 ? 'DESVIO' : 'GARGALO'))
-    };
+      eficiencia: hProd > 0 ? (hProd / (parseFloat(hProg) || 1)) * 100 : 0, // Placeholder calculation
+      tipo_registro: 'PRODUCAO'
+    });
   });
-  
-  const { error } = await sb.from('registros_cronoanalise').insert(registros);
-  
+
+  // If we have stoppage rows
+  paradaRows.forEach(tr => {
+    records.push({
+      ...base,
+      cod_parada: tr.querySelector('.parada-cod').value,
+      desc_parada: tr.querySelector('.parada-desc').value,
+      h_parada: tr.querySelector('.parada-horas').value,
+      tipo_parada: tr.querySelector('.parada-tipo').value,
+      tipo_registro: 'PARADA'
+    });
+  });
+
+  const { error } = await sb.from('registros_cronoanalise').insert(records);
   if (error) {
-    showToast('Erro ao salvar no Registro de cronoanálise: ' + error.message, 'err');
+    showToast('Erro ao salvar: ' + error.message, 'err');
   } else {
-    showToast('Informação de campo salva com sucesso no Supabase!', 'ok');
+    showToast('Registro do turno salvo com sucesso!', 'ok');
     clearForm();
     await loadData();
     renderAll();
@@ -358,7 +448,11 @@ async function saveRegisto() {
 
 function clearForm() {
   document.getElementById('pecas-body').innerHTML = '';
+  document.getElementById('paradas-body').innerHTML = '';
+  document.getElementById('f-h-inicio').value = '';
+  document.getElementById('f-h-fim').value = '';
   addPecaRow();
+  calcResumo();
 }
 
 function renderAll() {
@@ -371,14 +465,14 @@ function renderAll() {
     return;
   }
 
-  const totalProduced = STATE.registros.reduce((sum, r) => sum + r.qtd, 0);
+  const totalProduced = STATE.registros.reduce((sum, r) => sum + (r.qtd || 0), 0);
   const totalHDisp = STATE.registros[0].h_disponivel || 8.8; 
   const totalHProd = STATE.registros.reduce((sum, r) => sum + (r.h_produtiva || 0), 0);
   const residual = Math.max(0, totalHDisp - totalHProd);
   
   const recordsWithPattern = STATE.registros.filter(r => r.tp_padrao > 0);
   const avgEfic = recordsWithPattern.length > 0 ? 
-    recordsWithPattern.reduce((sum, r) => sum + r.eficiencia, 0) / recordsWithPattern.length : 0;
+    recordsWithPattern.reduce((sum, r) => sum + (r.eficiencia || 0), 0) / recordsWithPattern.length : 0;
   
   document.getElementById('kpi-efic-global').textContent = avgEfic.toFixed(1) + '%';
   document.getElementById('kpi-qtd-total').textContent = totalProduced;
@@ -389,23 +483,24 @@ function renderAll() {
 
   // Rule 2.2: Consultive Feedback
   const parecer = document.getElementById('parecer-consultivo');
-  if (STATE.registros.length > 0) {
-    const worst = [...STATE.registros].sort((a,b) => a.eficiencia - b.eficiencia)[0];
-    if (worst.tp_padrao === 0) {
-      parecer.innerHTML = `<span style="color:var(--warn)">[ALERTA] Houve atualização no método de trabalho para este processo? Registros sem Tempo Padrão identificado.</span>`;
-    } else if (worst.eficiencia < 95) {
+  const worst = [...STATE.registros].filter(r => r.tp_padrao > 0).sort((a,b) => a.eficiencia - b.eficiencia)[0];
+  
+  if (worst) {
+    if (worst.eficiencia < 95) {
       const desvio = (100 - worst.eficiencia).toFixed(1);
       parecer.innerHTML = `
         <div style="border-left: 4px solid var(--danger); padding-left: 12px;">
           <strong>Análise de Desvio:</strong> **${desvio}%** abaixo do **Tempo Padrão** na peça **${worst.cod_peca}**.<br>
           <strong>Causa Provável:</strong> ${worst.eficiencia < 80 ? 'Gargalo Crítico no fluxo de material ou Fadiga excessiva.' : 'Ritmo abaixo da média operacional.'}<br>
-          <strong>Sugestão de Melhoria:</strong> Revalidar método de trabalho e ergonomia da estação de **${worst.componente}**.
+          <strong>Sugestão de Melhoria:</strong> Revalidar método de trabalho e ergonomia da estação.
         </div>
       `;
-      if (worst.eficiencia < 80) showToast('ALERTA DE PRODUTIVIDADE: Baixa performance detectada!', 'err');
+      if (worst.eficiencia < 80) showToast('ALERTA DE PRODUTIVIDADE!', 'err');
     } else {
-      parecer.innerHTML = '<span style="color:var(--success)">[DENTRO DO PADRÃO] Processos operando em alta eficiência. Foco em manter o ritmo.</span>';
+      parecer.innerHTML = '<span style="color:var(--success)">[DENTRO DO PADRÃO] Processos operando em alta eficiência.</span>';
     }
+  } else {
+    parecer.innerHTML = '<em>Nenhum desvio crítico identificado.</em>';
   }
 }
 
