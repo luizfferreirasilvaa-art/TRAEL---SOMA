@@ -4,6 +4,7 @@
   --surface: #11141d;
   --card: #1a1e29;
   --card-hover: #232836;
+  --input-bg: #0d1117;
   --border: rgba(255, 255, 255, 0.08);
   --accent: #00f2c3; /* Cyan-Green */
   --accent-glow: rgba(0, 242, 195, 0.2);
@@ -17,18 +18,22 @@
   --font-mono: 'Space Mono', monospace;
   --font-body: 'Inter', sans-serif;
   --glass: rgba(26, 30, 41, 0.7);
+  --shadow: rgba(0,0,0,0.3);
 }
 
 body.light-theme {
-  --bg: #f0f2f5;
+  --bg: #f5f7fa;
   --surface: #ffffff;
   --card: #ffffff;
-  --card-hover: #f8f9fa;
-  --border: rgba(0, 0, 0, 0.08);
+  --card-hover: #fcfdfe;
+  --input-bg: #edf2f7;
+  --border: rgba(0, 0, 0, 0.1);
   --accent: #00a884;
+  --accent-glow: rgba(0, 168, 132, 0.15);
   --text: #1a1f26;
-  --text-muted: #5a667a;
+  --text-muted: #64748b;
   --glass: rgba(255, 255, 255, 0.8);
+  --shadow: rgba(0,0,0,0.08);
 }
 
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -100,7 +105,7 @@ nav { flex: 1; padding: 24px 16px; }
   border: 1px solid var(--border); 
   border-radius: 20px; 
   padding: 28px; 
-  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  box-shadow: 0 10px 30px var(--shadow);
   transition: transform 0.3s, box-shadow 0.3s;
 }
 .card:hover { transform: translateY(-5px); box-shadow: 0 15px 40px rgba(0,0,0,0.2); }
@@ -148,7 +153,7 @@ input[type="number"],
 input[type="date"], 
 input[type="time"], 
 select {
-  background: #0d1117; 
+  background: var(--input-bg); 
   border: 1px solid var(--border); 
   border-radius: 10px;
   padding: 12px 14px; 
@@ -203,7 +208,7 @@ input:focus, select:focus {
 .config-list { display: flex; flex-direction: column; gap: 10px; }
 .config-row {
   display: flex; justify-content: space-between; align-items: center;
-  background: #0d1117; border: 1px solid var(--border);
+  background: var(--input-bg); border: 1px solid var(--border);
   padding: 14px 18px; border-radius: 12px; transition: 0.2s;
 }
 .config-row:hover { border-color: var(--accent); }
@@ -221,7 +226,7 @@ input:focus, select:focus {
 }
 
 /* DIGITADOR SPECIFIC */
-.res-item { background: #0d1117; padding: 15px; border-radius: 15px; border: 1px solid var(--border); }
+.res-item { background: var(--input-bg); padding: 15px; border-radius: 15px; border: 1px solid var(--border); }
 .res-item .val { font-size: 18px; }
 
 #toast {
@@ -246,7 +251,7 @@ input:-webkit-autofill,
 input:-webkit-autofill:hover, 
 input:-webkit-autofill:focus {
   -webkit-text-fill-color: var(--text);
-  -webkit-box-shadow: 0 0 0px 1000px #0d1117 inset;
+  -webkit-box-shadow: 0 0 0px 1000px var(--input-bg) inset;
   transition: background-color 5000s ease-in-out 0s;
 }
 
