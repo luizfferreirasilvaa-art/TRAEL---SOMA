@@ -90,7 +90,147 @@ function setPage(p) {
   document.getElementById('page-title').textContent = p.charAt(0).toUpperCase() + p.slice(1).replace('-',' ');
 
   if (p === 'banco') renderDatabase();
+  if (p === 'paradas') renderParadas();
   if (p === 'config') renderConfigTable();
+}
+
+function renderDatabase() {
+  const list = document.getElementById('db-body');
+  if (!list) return;
+
+  const fPeca = document.getElementById('filter-peca').value.toLowerCase();
+  const fOper = document.getElementById('filter-oper').value;
+  const fData = document.getElementById('filter-data').value;
+
+  const filtered = STATE.registros.filter(r => {
+    const mPeca = !fPeca || (r.cod_peca && r.cod_peca.toLowerCase().includes(fPeca));
+    const mOper = !fOper || r.cod_oper === fOper;
+    const mData = !fData || r.data === fData;
+    return mPeca && mOper && mData;
+  });
+
+  if (filtered.length === 0) {
+    list.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:40px;">Nenhum registro encontrado com estes filtros.</td></tr>';
+    return;
+  }
+
+  list.innerHTML = filtered.map(r => `
+    <tr>
+      <td>${new Date(r.data).toLocaleDateString('pt-BR')}</td>
+      <td>${r.cod_oper}</td>
+      <td>${r.cod_maq}</td>
+      <td>${r.cod_peca || '-'}</td>
+      <td>${r.qtd || 0}</td>
+      <td>${r.tipo_registro === 'PRODUCAO' ? (r.eficiencia ? r.eficiencia.toFixed(1)+'%' : '-') : '-'}</td>
+      <td><span class="status-badge ${getStatusClass(r.eficiencia)}">${r.tipo_registro}</span></td>
+      <td><button class="btn btn-danger btn-sm" onclick="delRegistro('${r.id}')">Excluir</button></td>
+    </tr>
+  `).join('');
+}
+
+function getStatusClass(efic) {
+  if (!efic) return '';
+  if (efic >= 90) return 'status-padrao';
+  if (efic >= 75) return 'status-desvio';
+  return 'status-gargalo';
+}
+
+async function delRegistro(id) {
+  if (!confirm('Excluir este registro permanentemente?')) return;
+  const { error } = await sb.from('registros_cronoanalise').delete().eq('id', id);
+  if (!error) {
+    showToast('Registro excluído!');
+    await loadData();
+    renderAll();
+    renderDatabase();
+  }
+}
+
+function clearFilters() {
+  document.getElementById('filter-peca').value = '';
+  document.getElementById('filter-oper').value = '';
+  document.getElementById('filter-data').value = '';
+  renderDatabase();
+}
+
+let charts = { tipo: null, motivos: null };
+
+function renderParadas() {
+  const paradas = STATE.registros.filter(r => r.tipo_registro === 'PARADA');
+  const tbody = document.getElementById('paradas-detail-body');
+  
+  if (tbody) {
+    tbody.innerHTML = paradas.length === 0 
+      ? '<tr><td colspan="4" style="text-align:center; padding:20px;">Nenhuma parada registrada.</td></tr>'
+      : paradas.map(p => `
+      <tr>
+        <td>${new Date(p.data).toLocaleDateString('pt-BR')}</td>
+        <td><strong>${p.cod_parada}</strong> - ${p.desc_parada}</td>
+        <td>${(p.h_parada || 0).toFixed(2)}h</td>
+        <td><span class="status-badge ${p.tipo_parada === 'PROG' ? 'status-padrao' : 'status-gargalo'}">${p.tipo_parada}</span></td>
+      </tr>
+    `).join('');
+  }
+
+  // Process charts
+  const ctxTipo = document.getElementById('chart-tipo');
+  const ctxMot = document.getElementById('chart-motivos');
+  
+  if (!ctxTipo || !ctxMot) return;
+
+  // Group by Type
+  const prog = paradas.filter(p => p.tipo_parada === 'PROG').reduce((s,p) => s + (p.h_parada || 0), 0);
+  const nprog = paradas.filter(p => p.tipo_parada === 'NÃO PROG').reduce((s,p) => s + (p.h_parada || 0), 0);
+
+  if (charts.tipo) charts.tipo.destroy();
+  charts.tipo = new Chart(ctxTipo, {
+    type: 'doughnut',
+    data: {
+      labels: ['PROG', 'NÃO PROG'],
+      datasets: [{
+        data: [prog, nprog],
+        backgroundColor: ['#00f2c3', '#ff4d6d'],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { color: '#8b949e' } } }
+    }
+  });
+
+  // Group by Reason (Top 5)
+  const motMap = {};
+  paradas.forEach(p => {
+    const key = p.desc_parada || 'Não informado';
+    motMap[key] = (motMap[key] || 0) + (p.h_parada || 0);
+  });
+  const sortedMot = Object.entries(motMap).sort((a,b) => b[1] - a[1]).slice(0, 5);
+
+  if (charts.motivos) charts.motivos.destroy();
+  charts.motivos = new Chart(ctxMot, {
+    type: 'bar',
+    data: {
+      labels: sortedMot.map(x => x[0].substring(0, 15)),
+      datasets: [{
+        label: 'Horas',
+        data: sortedMot.map(x => x[1]),
+        backgroundColor: '#4d94ff',
+        borderRadius: 5
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      indexAxis: 'y',
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#8b949e' } },
+        y: { grid: { display: false }, ticks: { color: '#8b949e' } }
+      }
+    }
+  });
 }
 
 // ───────── CONFIG MANAGEMENT (RULE 1.4) ─────────
@@ -567,7 +707,7 @@ function exportCSV() {
 async function simulateData() {
   const opers = STATE.operadores.length > 0 ? STATE.operadores : [{cod:'OP01', nome:'João Silva'}];
   const maqs = STATE.maquinas.length > 0 ? STATE.maquinas : [{cod:'MQ01', nome:'Prensa'}];
-  const motives = STATE.parada_motivos.length > 0 ? STATE.parada_motivos : [{cod:'P01', desc:'Manutenção', tipo:'PROG'}];
+  const motives = STATE.paradas.length > 0 ? STATE.paradas : [{cod:'P01', desc:'Manutenção', tipo:'PROG'}];
   
   const records = [];
   const today = new Date().toISOString().split('T')[0];
@@ -580,11 +720,12 @@ async function simulateData() {
     const duration = (Math.random() * 1.2 + 0.1).toFixed(2);
     
     records.push({
-      data: today, turno: 'D', operador: op.cod, nome_operador: op.nome,
-      maquina: mq.cod, nome_maquina: mq.nome, tipo_registro: 'PARADA',
+      data: today, turno: 'D', cod_oper: op.cod, desc_oper: op.nome,
+      cod_maq: mq.cod, desc_maq: mq.nome, tipo_registro: 'PARADA',
       cod_parada: mot.cod, desc_parada: mot.desc, h_parada: parseFloat(duration),
-      h_inicio: '07:30', h_fim: '17:18', h_disponivel: 9.8, h_prog: 8.8,
-      peca: '-', qtd: 0, tp_padrao: 0, h_produtiva: 0, mes: 'Maio'
+      h_inicio: '07:30', h_fim: '17:18', h_disponivel: 9.8, h_programada: 8.8,
+      cod_peca: '-', qtd: 0, tp_padrao: 0, h_produtiva: 0, mes: 5,
+      tipo_parada: mot.tipo
     });
   }
 
@@ -599,18 +740,20 @@ async function simulateData() {
     const hProd = (qtd / parseFloat(tp)).toFixed(2);
 
     records.push({
-      data: today, turno: 'D', operador: op.cod, nome_operador: op.nome,
-      maquina: mq.cod, nome_maquina: mq.nome, tipo_registro: 'PRODUCAO',
+      data: today, turno: 'D', cod_oper: op.cod, desc_oper: op.nome,
+      cod_maq: mq.cod, desc_maq: mq.nome, tipo_registro: 'PRODUCAO',
       cod_parada: '-', desc_parada: '-', h_parada: 0,
-      h_inicio: '07:30', h_fim: '17:18', h_disponivel: 9.8, h_prog: 8.8,
-      peca: peca, qtd: qtd, tp_padrao: parseFloat(tp), h_produtiva: parseFloat(hProd), mes: 'Maio'
+      h_inicio: '07:30', h_fim: '17:18', h_disponivel: 9.8, h_programada: 8.8,
+      cod_peca: peca, qtd: qtd, tp_padrao: parseFloat(tp), h_produtiva: parseFloat(hProd), 
+      mes: 5, eficiencia: (Math.random() * 20 + 80).toFixed(1)
     });
   }
   
-  const { error } = await supabase.from('registros').insert(records);
+  const { error } = await sb.from('registros_cronoanalise').insert(records);
   if(!error) {
     showToast('Dados simulados com sucesso!');
-    loadInitialData();
+    await loadData();
+    renderAll();
   } else {
     console.error('Erro na simulação:', error);
     showToast('Falha ao simular dados.');
@@ -618,18 +761,21 @@ async function simulateData() {
 }
 
 window.simulateData = simulateData;
+window.delRegistro = delRegistro;
+window.clearFilters = clearFilters;
 window.confirmClear = confirmClear;
 window.exportCSV = exportCSV;
 window.addConfig = addConfig;
-window.delConfig = delConfig;
+window.removeConfig = removeConfig;
 window.addPecaRow = addPecaRow;
 window.addParadaRow = addParadaRow;
-window.saveRegistro = saveRegistro;
+window.saveRegisto = saveRegisto;
 window.setPage = setPage;
 window.toggleTheme = toggleTheme;
 window.fillOper = fillOper;
 window.fillMaq = fillMaq;
+window.updateParadaDesc = updateParadaDesc;
 
 // Init
-loadInitialData();
+window.onload(); 
 }

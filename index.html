@@ -8,6 +8,8 @@
 <link rel="stylesheet" href="style.css">
 <!-- Supabase SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -297,14 +299,14 @@
     <div class="grid-2">
       <div class="card">
         <div class="card-title">PARADAS POR TIPO</div>
-        <div id="chart-paradas-tipo" style="height: 200px; display: flex; align-items: center; justify-content: center; color: var(--muted);">
-          [Gráfico de Paradas em breve]
+        <div style="height: 250px;">
+          <canvas id="chart-tipo"></canvas>
         </div>
       </div>
       <div class="card">
         <div class="card-title">TOP 5 MOTIVOS DE PARADA</div>
-        <div id="top-paradas-list">
-          <p style="color:var(--muted); font-size:13px;">Nenhuma parada registrada no período.</p>
+        <div style="height: 250px;">
+          <canvas id="chart-motivos"></canvas>
         </div>
       </div>
     </div>
