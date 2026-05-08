@@ -50,31 +50,69 @@
     </div>
   </div>
 
-  <!-- DASHBOARD -->
+  <!-- DASHBOARD (RULE 4) -->
   <div class="page active" id="page-dashboard">
-    <div class="grid-4 mt-16" id="kpi-row">
+    <div class="grid-4 mb-24">
       <div class="card kpi accent">
+        <div class="card-title">Eficiência Global</div>
         <div class="val" id="kpi-efic-global">0%</div>
-        <div class="lbl">Eficiência Global</div>
+        <div class="lbl">vs. Tempo Padrão</div>
       </div>
       <div class="card kpi blue">
+        <div class="card-title">Volume Total</div>
         <div class="val" id="kpi-qtd-total">0</div>
-        <div class="lbl">Total Produzido</div>
+        <div class="lbl">Peças Produzidas</div>
       </div>
       <div class="card kpi warn">
+        <div class="card-title">Tempo Residual</div>
         <div class="val" id="kpi-residual">0h</div>
-        <div class="lbl">Tempo Residual (Cronoanálise)</div>
+        <div class="lbl">Desperdício por Ciclo</div>
       </div>
       <div class="card kpi danger">
+        <div class="card-title">Gargalos</div>
         <div class="val" id="kpi-gargalos">0</div>
-        <div class="lbl">Gargalos Críticos</div>
+        <div class="lbl">Alertas Críticos</div>
+      </div>
+    </div>
+
+    <div class="card mb-24">
+      <div class="card-title">RESUMO EXECUTIVO</div>
+      <div id="parecer-consultivo">
+        <em>Sincronizando registros de cronoanálise...</em>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">TABELA COMPARATIVA DE TEMPOS</div>
+        <div class="table-wrap">
+          <table class="paradas-table">
+            <thead>
+              <tr>
+                <th>Elemento</th>
+                <th>T. Médio</th>
+                <th>T. Normal</th>
+                <th>T. Padrão</th>
+              </tr>
+            </thead>
+            <tbody id="table-comparativa">
+              <tr><td colspan="4" style="text-align:center;color:var(--muted)">Aguardando dados...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">GANHOS E ALERTAS</div>
+        <div id="ganhos-alertas" class="config-list">
+          <p style="color:var(--muted);font-size:13px;"><em>Sem observações de campo no momento.</em></p>
+        </div>
       </div>
     </div>
 
     <div class="card mt-24">
-      <div class="card-title">PARECER DA CONSULTORIA SOMA</div>
-      <div id="parecer-consultivo" style="font-size:14px; line-height:1.6; color:var(--text);">
-        <em>Selecione um registro para visualizar a análise de desvio e sugestões de melhoria.</em>
+      <div class="card-title">PROJEÇÃO DE EFICIÊNCIA (ENTREGA ESTIMADA)</div>
+      <div id="projecao-entrega" style="font-family:var(--font-mono); font-size:18px; color:var(--accent);">
+        -- peças para o restante do turno
       </div>
     </div>
   </div>
