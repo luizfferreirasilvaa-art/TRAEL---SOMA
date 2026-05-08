@@ -54,6 +54,7 @@ async function loadData() {
 function fillSelects() {
   const sOper = document.getElementById('f-codoper');
   const sMaq = document.getElementById('f-codmaq');
+  const fOper = document.getElementById('filter-oper');
   
   if (sOper) {
     sOper.innerHTML = '<option value="">Selecione</option>' + 
@@ -62,6 +63,10 @@ function fillSelects() {
   if (sMaq) {
     sMaq.innerHTML = '<option value="">Selecione</option>' + 
       STATE.maquinas.map(m => `<option value="${m.cod}">${m.cod} - ${m.nome}</option>`).join('');
+  }
+  if (fOper) {
+    fOper.innerHTML = '<option value="">Todos Operadores</option>' + 
+      STATE.operadores.map(o => `<option value="${o.cod}">${o.nome}</option>`).join('');
   }
 }
 
@@ -76,9 +81,172 @@ function setPage(p) {
   document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(nv => nv.classList.remove('active'));
   
-  document.getElementById('page-' + p).classList.add('active');
-  document.getElementById('nav-' + p).classList.add('active');
+  const page = document.getElementById('page-' + p);
+  if (page) page.classList.add('active');
+  
+  const nav = document.getElementById('nav-' + p);
+  if (nav) nav.classList.add('active');
+  
   document.getElementById('page-title').textContent = p.charAt(0).toUpperCase() + p.slice(1).replace('-',' ');
+
+  if (p === 'banco') renderDatabase();
+  if (p === 'config') renderConfigTable();
+}
+
+// ───────── CONFIG MANAGEMENT (RULE 1.4) ─────────
+async function renderConfigTable() {
+  const lOper = document.getElementById('list-oper');
+  const lMaq = document.getElementById('list-maq');
+  const lPar = document.getElementById('list-parada-motivos');
+
+  if (lOper) {
+    lOper.innerHTML = STATE.operadores.map(o => `
+      <div class="config-row">
+        <span><strong>${o.cod}</strong> - ${o.nome}</span>
+        <button class="btn-del" onclick="removeConfig('operadores', '${o.id}')">×</button>
+      </div>
+    `).join('');
+  }
+  if (lMaq) {
+    lMaq.innerHTML = STATE.maquinas.map(m => `
+      <div class="config-row">
+        <span><strong>${m.cod}</strong> - ${m.nome}</span>
+        <button class="btn-del" onclick="removeConfig('maquinas', '${m.id}')">×</button>
+      </div>
+    `).join('');
+  }
+  if (lPar) {
+    lPar.innerHTML = STATE.paradas.map(p => `
+      <div class="config-row">
+        <span><strong>${p.cod}</strong> - ${p.descricao} <small>(${p.tipo})</small></span>
+        <button class="btn-del" onclick="removeConfig('paradas_motivos', '${p.id}')">×</button>
+      </div>
+    `).join('');
+  }
+}
+
+async function addConfig(type) {
+  let table = '';
+  let payload = {};
+
+  if (type === 'oper') {
+    table = 'operadores';
+    payload = { cod: document.getElementById('new-oper-cod').value, nome: document.getElementById('new-oper-nome').value.toUpperCase() };
+  } else if (type === 'maq') {
+    table = 'maquinas';
+    payload = { cod: document.getElementById('new-maq-cod').value, nome: document.getElementById('new-maq-nome').value.toUpperCase() };
+  } else if (type === 'par') {
+    table = 'paradas_motivos';
+    payload = { 
+      cod: document.getElementById('new-par-cod').value, 
+      descricao: document.getElementById('new-par-desc').value.toUpperCase(),
+      tipo: document.getElementById('new-par-tipo').value
+    };
+  }
+
+  if (!payload.cod) {
+    showToast('Informe ao menos o código!', 'err');
+    return;
+  }
+
+  const { error } = await sb.from(table).insert([payload]);
+  if (error) {
+    showToast('Erro ao salvar configuração', 'err');
+  } else {
+    showToast('Configuração salva com sucesso!', 'ok');
+    await loadConfig();
+    renderConfigTable();
+    // Clear inputs
+    if (type === 'oper') { document.getElementById('new-oper-cod').value=''; document.getElementById('new-oper-nome').value=''; }
+    if (type === 'maq') { document.getElementById('new-maq-cod').value=''; document.getElementById('new-maq-nome').value=''; }
+    if (type === 'par') { document.getElementById('new-par-cod').value=''; document.getElementById('new-par-desc').value=''; }
+  }
+}
+
+async function removeConfig(table, id) {
+  if (!confirm('Deseja realmente remover esta configuração?')) return;
+  const { error } = await sb.from(table).delete().eq('id', id);
+  if (error) {
+    showToast('Erro ao remover registro', 'err');
+  } else {
+    showToast('Registro removido!', 'ok');
+    await loadConfig();
+    renderConfigTable();
+  }
+}
+
+// ───────── DATABASE VIEW (RULE 5) ─────────
+function renderDatabase() {
+  const fPeca = document.getElementById('filter-peca').value.toLowerCase();
+  const fOper = document.getElementById('filter-oper').value;
+  const fData = document.getElementById('filter-data').value;
+
+  const filtered = STATE.registros.filter(r => {
+    const matchPeca = !fPeca || r.cod_peca.toLowerCase().includes(fPeca);
+    const matchOper = !fOper || r.cod_oper === fOper;
+    const matchData = !fData || r.data === fData;
+    return matchPeca && matchOper && matchData;
+  });
+
+  const tbody = document.getElementById('db-body');
+  if (!tbody) return;
+
+  tbody.innerHTML = filtered.map(r => `
+    <tr>
+      <td>${new Date(r.data).toLocaleDateString('pt-BR')}</td>
+      <td>${r.cod_oper}</td>
+      <td>${r.cod_maq}</td>
+      <td>${r.cod_peca}</td>
+      <td>${r.qtd}</td>
+      <td>${r.eficiencia.toFixed(1)}%</td>
+      <td>${getStatusLabel(r.eficiencia)}</td>
+      <td>
+        <button class="btn btn-danger btn-sm" onclick="deleteRecord('${r.id}')">Excluir</button>
+      </td>
+    </tr>
+  `).join('') || '<tr><td colspan="8" style="text-align:center; padding:20px; color:var(--muted);">Nenhum registro encontrado com estes filtros.</td></tr>';
+}
+
+async function deleteRecord(id) {
+  if (!confirm('Excluir este registro permanentemente?')) return;
+  const { error } = await sb.from('registros_cronoanalise').delete().eq('id', id);
+  if (error) {
+    showToast('Erro ao excluir', 'err');
+  } else {
+    showToast('Registro excluído!', 'ok');
+    await loadData();
+    renderDatabase();
+    renderAll();
+  }
+}
+
+function clearFilters() {
+  document.getElementById('filter-peca').value = '';
+  document.getElementById('filter-oper').value = '';
+  document.getElementById('filter-data').value = '';
+  renderDatabase();
+}
+
+// ───────── DB CLEAR (RULE 5) ─────────
+function confirmClear() {
+  document.getElementById('modal-clear').classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('modal-clear').classList.remove('active');
+}
+
+async function clearDB() {
+  const { error } = await sb.from('registros_cronoanalise').delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+  if (error) {
+    showToast('Erro ao limpar base: ' + error.message, 'err');
+  } else {
+    showToast('Base de dados de tempos limpa com sucesso!', 'ok');
+    closeModal();
+    await loadData();
+    renderAll();
+    if (document.getElementById('page-banco').classList.contains('active')) renderDatabase();
+  }
 }
 
 // ───────── CORE LOGIC (RULE 1.1) ─────────
@@ -194,7 +362,14 @@ function clearForm() {
 }
 
 function renderAll() {
-  if (STATE.registros.length === 0) return;
+  if (STATE.registros.length === 0) {
+    document.getElementById('kpi-efic-global').textContent = '0%';
+    document.getElementById('kpi-qtd-total').textContent = '0';
+    document.getElementById('kpi-residual').textContent = '0h';
+    document.getElementById('kpi-gargalos').textContent = '0';
+    document.getElementById('parecer-consultivo').innerHTML = '<em>Aguardando registros...</em>';
+    return;
+  }
 
   const totalProduced = STATE.registros.reduce((sum, r) => sum + r.qtd, 0);
   const totalHDisp = STATE.registros[0].h_disponivel || 8.8; 
@@ -244,13 +419,6 @@ function fillMaq() {
   const cod = document.getElementById('f-codmaq').value;
   const m = STATE.maquinas.find(x => x.cod === cod);
   document.getElementById('f-descmaq').value = m ? m.nome : '';
-}
-
-function confirmClear() {
-  if (confirm('Deseja limpar o cache local? Os dados no Supabase não serão afetados.')) {
-    localStorage.removeItem('soma-theme');
-    showToast('Cache limpo!', 'ok');
-  }
 }
 
 function exportCSV() {
