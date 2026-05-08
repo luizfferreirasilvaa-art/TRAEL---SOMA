@@ -556,11 +556,80 @@ function exportCSV() {
   if (STATE.registros.length === 0) return;
   const headers = Object.keys(STATE.registros[0]).join(',');
   const rows = STATE.registros.map(r => Object.values(r).join(',')).join('\n');
-  const csvContent = "data:text/csv;charset=utf-8," + headers + "\n" + rows;
-  const encodedUri = encodeURI(csvContent);
-  const link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
-  link.setAttribute("download", "soma_cronoanalise.csv");
-  document.body.appendChild(link);
-  link.click();
+  const blob = new Blob([headers + '\n' + rows], { type: 'text/csv' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.setAttribute('href', url);
+  a.setAttribute('download', 'soma_data.csv');
+  a.click();
+}
+
+async function simulateData() {
+  const opers = STATE.operadores.length > 0 ? STATE.operadores : [{cod:'OP01', nome:'João Silva'}];
+  const maqs = STATE.maquinas.length > 0 ? STATE.maquinas : [{cod:'MQ01', nome:'Prensa'}];
+  const motives = STATE.parada_motivos.length > 0 ? STATE.parada_motivos : [{cod:'P01', desc:'Manutenção', tipo:'PROG'}];
+  
+  const records = [];
+  const today = new Date().toISOString().split('T')[0];
+  
+  // 10 Paradas
+  for(let i=0; i<10; i++) {
+    const op = opers[Math.floor(Math.random() * opers.length)];
+    const mq = maqs[Math.floor(Math.random() * maqs.length)];
+    const mot = motives[Math.floor(Math.random() * motives.length)];
+    const duration = (Math.random() * 1.2 + 0.1).toFixed(2);
+    
+    records.push({
+      data: today, turno: 'D', operador: op.cod, nome_operador: op.nome,
+      maquina: mq.cod, nome_maquina: mq.nome, tipo_registro: 'PARADA',
+      cod_parada: mot.cod, desc_parada: mot.desc, h_parada: parseFloat(duration),
+      h_inicio: '07:30', h_fim: '17:18', h_disponivel: 9.8, h_prog: 8.8,
+      peca: '-', qtd: 0, tp_padrao: 0, h_produtiva: 0, mes: 'Maio'
+    });
+  }
+
+  // 5 Produções
+  const pecas = ['3185', '4200', '1150', '2290', '5000'];
+  for(let i=0; i<5; i++) {
+    const op = opers[Math.floor(Math.random() * opers.length)];
+    const mq = maqs[Math.floor(Math.random() * maqs.length)];
+    const peca = pecas[i];
+    const qtd = Math.floor(Math.random() * 100 + 50);
+    const tp = (Math.random() * 5 + 10).toFixed(2); // Pç/H
+    const hProd = (qtd / parseFloat(tp)).toFixed(2);
+
+    records.push({
+      data: today, turno: 'D', operador: op.cod, nome_operador: op.nome,
+      maquina: mq.cod, nome_maquina: mq.nome, tipo_registro: 'PRODUCAO',
+      cod_parada: '-', desc_parada: '-', h_parada: 0,
+      h_inicio: '07:30', h_fim: '17:18', h_disponivel: 9.8, h_prog: 8.8,
+      peca: peca, qtd: qtd, tp_padrao: parseFloat(tp), h_produtiva: parseFloat(hProd), mes: 'Maio'
+    });
+  }
+  
+  const { error } = await supabase.from('registros').insert(records);
+  if(!error) {
+    showToast('Dados simulados com sucesso!');
+    loadInitialData();
+  } else {
+    console.error('Erro na simulação:', error);
+    showToast('Falha ao simular dados.');
+  }
+}
+
+window.simulateData = simulateData;
+window.confirmClear = confirmClear;
+window.exportCSV = exportCSV;
+window.addConfig = addConfig;
+window.delConfig = delConfig;
+window.addPecaRow = addPecaRow;
+window.addParadaRow = addParadaRow;
+window.saveRegistro = saveRegistro;
+window.setPage = setPage;
+window.toggleTheme = toggleTheme;
+window.fillOper = fillOper;
+window.fillMaq = fillMaq;
+
+// Init
+loadInitialData();
 }
