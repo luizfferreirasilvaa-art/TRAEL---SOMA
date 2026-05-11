@@ -72,7 +72,7 @@ function fillSelects() {
   }
   if (sSetor) {
     sSetor.innerHTML = '<option value="">Selecione</option>' + 
-      STATE.setores.map(s => `<option value="${s.cod}">${s.cod} - ${s.desc}</option>`).join('');
+      STATE.setores.map(s => `<option value="${s.cod}">${s.cod} - ${s.descricao}</option>`).join('');
   }
   if (fOper) {
     fOper.innerHTML = '<option value="">Todos Operadores</option>' + 
@@ -80,7 +80,7 @@ function fillSelects() {
   }
   if (fSetor) {
     fSetor.innerHTML = '<option value="">Todos Setores</option>' + 
-      STATE.setores.map(s => `<option value="${s.cod}">${s.cod} - ${s.desc}</option>`).join('');
+      STATE.setores.map(s => `<option value="${s.cod}">${s.cod} - ${s.descricao}</option>`).join('');
   }
   if (pOper) {
     pOper.innerHTML = '<option value="">— Selecione um operador —</option>' + 
@@ -282,7 +282,7 @@ async function renderConfigTable() {
   if (lPar) {
     lPar.innerHTML = STATE.paradas.map(p => `
       <div class="config-row">
-        <span><strong>${p.cod}</strong> - ${p.desc} <small>(${p.tipo})</small></span>
+        <span><strong>${p.cod}</strong> - ${p.descricao} <small>(${p.tipo})</small></span>
         <button class="btn-del" onclick="removeConfig('paradas_motivos', '${p.id}')">×</button>
       </div>
     `).join('');
@@ -292,7 +292,7 @@ async function renderConfigTable() {
       ? '<p style="color:var(--muted);font-size:13px;"><em>Nenhum setor cadastrado.</em></p>'
       : STATE.setores.map(s => `
       <div class="config-row">
-        <span><strong>${s.cod}</strong> - ${s.desc}</span>
+        <span><strong>${s.cod}</strong> - ${s.descricao}</span>
         <button class="btn-del" onclick="removeConfig('setores', '${s.id}')">×</button>
       </div>
     `).join('');
@@ -317,14 +317,14 @@ async function addConfig(type) {
     table = 'paradas_motivos';
     payload = { 
       cod: document.getElementById('new-par-cod').value, 
-      "desc": document.getElementById('new-par-desc').value.toUpperCase(),
+      descricao: document.getElementById('new-par-desc').value.toUpperCase(),
       tipo: document.getElementById('new-par-tipo').value
     };
   } else if (type === 'set') {
     table = 'setores';
     payload = {
       cod: document.getElementById('new-set-cod').value.toUpperCase(),
-      desc: document.getElementById('new-set-desc').value.toUpperCase()
+      descricao: document.getElementById('new-set-desc').value.toUpperCase()
     };
   }
 
@@ -457,7 +457,7 @@ function fillParadaRow(el) {
   const tr = el.parentElement.parentElement;
   const cod = el.value;
   const p = STATE.paradas.find(x => x.cod === cod);
-  tr.querySelector('.parada-desc').value = p ? p.desc : '';
+  tr.querySelector('.parada-desc').value = p ? p.descricao : '';
   tr.querySelector('.parada-tipo').value = p ? p.tipo : '';
   calcResumo();
 }
@@ -509,7 +509,7 @@ async function saveRegisto() {
   const codMaq = document.getElementById('f-codmaq').value;
   const descMaq = document.getElementById('f-descmaq').value;
   const codSetor = document.getElementById('f-codsetor').value;
-  const descSetor = STATE.setores.find(s => s.cod === codSetor)?.desc || '';
+  const descSetor = STATE.setores.find(s => s.cod === codSetor)?.descricao || '';
   const hInicio = document.getElementById('f-h-inicio').value;
   const hFim = document.getElementById('f-h-fim').value;
   const hDisp = document.getElementById('f-hdisp').value;
@@ -700,7 +700,7 @@ function fillMaq() {
 function fillSetor() {
   const cod = document.getElementById('f-codsetor').value;
   const s = STATE.setores.find(x => x.cod === cod);
-  document.getElementById('f-descsetor').value = s ? s.desc : '';
+  document.getElementById('f-descsetor').value = s ? s.descricao : '';
 }
 
 function exportCSV() {
@@ -720,7 +720,7 @@ function exportCSV() {
 async function simulateData() {
   const opers = STATE.operadores.length > 0 ? STATE.operadores : [{cod:'OP01', nome:'João Silva'}];
   const maqs = STATE.maquinas.length > 0 ? STATE.maquinas : [{cod:'MQ01', nome:'Prensa'}];
-  const motives = STATE.paradas.length > 0 ? STATE.paradas : [{cod:'P01', desc:'Manutenção', tipo:'PROG'}];
+  const motives = STATE.paradas.length > 0 ? STATE.paradas : [{cod:'P01', descricao:'Manutenção', tipo:'PROG'}];
   
   const records = [];
   const today = new Date().toISOString().split('T')[0];
@@ -735,7 +735,7 @@ async function simulateData() {
     records.push({
       data: today, turno: 'D', cod_oper: op.cod, desc_oper: op.nome,
       cod_maq: mq.cod, desc_maq: mq.nome, tipo_registro: 'PARADA',
-      cod_parada: mot.cod, desc_parada: mot.desc, h_parada: parseFloat(duration),
+      cod_parada: mot.cod, desc_parada: mot.descricao, h_parada: parseFloat(duration),
       h_inicio: '07:30', h_fim: '17:18', h_disponivel: 9.8, h_programada: 8.8,
       cod_peca: '-', qtd: 0, tp_padrao: 0, h_produtiva: 0, mes: 5,
       tipo_parada: mot.tipo

@@ -27,8 +27,16 @@ CREATE TABLE maquinas (
 CREATE TABLE paradas_motivos (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     cod TEXT UNIQUE NOT NULL,
-    "desc" TEXT NOT NULL,
+    descricao TEXT NOT NULL,
     tipo TEXT CHECK (tipo IN ('PROG', 'NÃO PROG')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 4. Tabela de Setores
+CREATE TABLE IF NOT EXISTS setores (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    cod TEXT UNIQUE NOT NULL,
+    descricao TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -99,8 +107,9 @@ INSERT INTO maquinas (cod, nome) VALUES
 ('MQ02', 'Bobinadeira Automática'),
 ('MQ03', 'Célula de Solda');
 
-INSERT INTO paradas_motivos (cod, "desc", tipo) VALUES 
+INSERT INTO paradas_motivos (cod, descricao, tipo) VALUES 
 ('P01', 'Falta de Matéria-prima', 'NÃO PROG'),
 ('P02', 'Manutenção Preventiva', 'PROG'),
 ('P03', 'Troca de Ferramenta', 'PROG'),
 ('P04', 'Queda de Energia', 'NÃO PROG');
+
