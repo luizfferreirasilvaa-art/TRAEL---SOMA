@@ -1,9 +1,9 @@
-// ───────── SUPABASE CONFIG ─────────
+// ───────── CONFIGURAÇÃO DO SUPABASE ─────────
 const SUPABASE_URL = 'https://ccytzaruxdbtqqblpciq.supabase.co'; 
 const SUPABASE_KEY = 'sb_publishable_IowVi8PFf6gDSzjpC8EgQA_sFzzkvsv';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ───────── STATE ─────────
+// ───────── ESTADO GLOBAL ─────────
 let STATE = {
   operadores: [],
   maquinas: [],
@@ -11,14 +11,14 @@ let STATE = {
   registros: []
 };
 
-// ───────── INITIALIZATION ─────────
+// ───────── INICIALIZAÇÃO ─────────
 window.onload = async () => {
   showToast('Sincronizando com a base de dados de tempos...', 'ok');
   await loadConfig();
   await loadData();
   renderAll();
   
-  // Theme check
+  // Verificação de tema salvo
   if (localStorage.getItem('soma-theme') === 'light') {
     document.body.classList.add('light-theme');
   }
@@ -70,13 +70,13 @@ function fillSelects() {
   }
 }
 
-// ───────── THEME TOGGLE ─────────
+// ───────── ALTERNÂNCIA DE TEMA ─────────
 function toggleTheme() {
   const isLight = document.body.classList.toggle('light-theme');
   localStorage.setItem('soma-theme', isLight ? 'light' : 'dark');
 }
 
-// ───────── NAVIGATION ─────────
+// ───────── NAVEGAÇÃO ENTRE PÁGINAS ─────────
 function setPage(p) {
   document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(nv => nv.classList.remove('active'));
@@ -130,8 +130,8 @@ function renderDatabase() {
 
 function getStatusClass(efic) {
   if (!efic) return '';
-  if (efic >= 90) return 'status-padrao';
-  if (efic >= 75) return 'status-desvio';
+  if (efic >= 95) return 'status-padrao';
+  if (efic >= 80) return 'status-desvio';
   return 'status-gargalo';
 }
 
@@ -172,13 +172,13 @@ function renderParadas() {
     `).join('');
   }
 
-  // Process charts
+  // Processar gráficos de paradas
   const ctxTipo = document.getElementById('chart-tipo');
   const ctxMot = document.getElementById('chart-motivos');
   
   if (!ctxTipo || !ctxMot) return;
 
-  // Group by Type
+  // Agrupamento por tipo de parada
   const prog = paradas.filter(p => p.tipo_parada === 'PROG').reduce((s,p) => s + (p.h_parada || 0), 0);
   const nprog = paradas.filter(p => p.tipo_parada === 'NÃO PROG').reduce((s,p) => s + (p.h_parada || 0), 0);
 
@@ -200,7 +200,7 @@ function renderParadas() {
     }
   });
 
-  // Group by Reason (Top 5)
+  // Agrupamento por motivo (Top 5)
   const motMap = {};
   paradas.forEach(p => {
     const key = p.desc_parada || 'Não informado';
@@ -233,7 +233,7 @@ function renderParadas() {
   });
 }
 
-// ───────── CONFIG MANAGEMENT (RULE 1.4) ─────────
+// ───────── GERENCIAMENTO DE CONFIGURAÇÕES (REGRA 1.4) ─────────
 async function renderConfigTable() {
   const lOper = document.getElementById('list-oper');
   const lMaq = document.getElementById('list-maq');
@@ -296,7 +296,7 @@ async function addConfig(type) {
     showToast('Configuração salva com sucesso!', 'ok');
     await loadConfig();
     renderConfigTable();
-    // Clear inputs
+    // Limpar campos do formulário
     if (type === 'oper') { document.getElementById('new-oper-cod').value=''; document.getElementById('new-oper-nome').value=''; }
     if (type === 'maq') { document.getElementById('new-maq-cod').value=''; document.getElementById('new-maq-nome').value=''; }
     if (type === 'par') { document.getElementById('new-par-cod').value=''; document.getElementById('new-par-desc').value=''; }
@@ -315,59 +315,9 @@ async function removeConfig(table, id) {
   }
 }
 
-// ───────── DATABASE VIEW (RULE 5) ─────────
-function renderDatabase() {
-  const fPeca = document.getElementById('filter-peca').value.toLowerCase();
-  const fOper = document.getElementById('filter-oper').value;
-  const fData = document.getElementById('filter-data').value;
 
-  const filtered = STATE.registros.filter(r => {
-    const matchPeca = !fPeca || r.cod_peca.toLowerCase().includes(fPeca);
-    const matchOper = !fOper || r.cod_oper === fOper;
-    const matchData = !fData || r.data === fData;
-    return matchPeca && matchOper && matchData;
-  });
 
-  const tbody = document.getElementById('db-body');
-  if (!tbody) return;
-
-  tbody.innerHTML = filtered.map(r => `
-    <tr>
-      <td>${new Date(r.data).toLocaleDateString('pt-BR')}</td>
-      <td>${r.cod_oper}</td>
-      <td>${r.cod_maq}</td>
-      <td>${r.cod_peca}</td>
-      <td>${r.qtd}</td>
-      <td>${r.eficiencia.toFixed(1)}%</td>
-      <td>${getStatusLabel(r.eficiencia)}</td>
-      <td>
-        <button class="btn btn-danger btn-sm" onclick="deleteRecord('${r.id}')">Excluir</button>
-      </td>
-    </tr>
-  `).join('') || '<tr><td colspan="8" style="text-align:center; padding:20px; color:var(--muted);">Nenhum registro encontrado com estes filtros.</td></tr>';
-}
-
-async function deleteRecord(id) {
-  if (!confirm('Excluir este registro permanentemente?')) return;
-  const { error } = await sb.from('registros_cronoanalise').delete().eq('id', id);
-  if (error) {
-    showToast('Erro ao excluir', 'err');
-  } else {
-    showToast('Registro excluído!', 'ok');
-    await loadData();
-    renderDatabase();
-    renderAll();
-  }
-}
-
-function clearFilters() {
-  document.getElementById('filter-peca').value = '';
-  document.getElementById('filter-oper').value = '';
-  document.getElementById('filter-data').value = '';
-  renderDatabase();
-}
-
-// ───────── DB CLEAR (RULE 5) ─────────
+// ───────── LIMPEZA DA BASE DE DADOS (REGRA 5) ─────────
 function confirmClear() {
   document.getElementById('modal-clear').classList.add('active');
 }
@@ -376,20 +326,9 @@ function closeModal() {
   document.getElementById('modal-clear').classList.remove('active');
 }
 
-async function clearDB() {
-  const { error } = await sb.from('registros_cronoanalise').delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
-  if (error) {
-    showToast('Erro ao limpar base: ' + error.message, 'err');
-  } else {
-    showToast('Base de dados de tempos limpa com sucesso!', 'ok');
-    closeModal();
-    await loadData();
-    renderAll();
-    if (document.getElementById('page-banco').classList.contains('active')) renderDatabase();
-  }
-}
 
-// ───────── CORE LOGIC (RULE 1.1) ─────────
+
+// ───────── LÓGICA DE CÁLCULO PRINCIPAL (REGRA 1.1) ─────────
 function calculateEfficiency(real, pattern) {
   if (!pattern || pattern === 0) return 0;
   return (real / pattern) * 100;
@@ -402,7 +341,7 @@ function getStatusLabel(efic) {
   return '<span class="status-tag status-gargalo">[GARGALO CRÍTICO]</span>';
 }
 
-// ───────── UI HELPERS ─────────
+// ───────── AUXILIARES DE INTERFACE ─────────
 function showToast(msg, type) {
   const t = document.getElementById('toast');
   if (!t) return;
@@ -411,7 +350,7 @@ function showToast(msg, type) {
   setTimeout(() => t.className = '', 3000);
 }
 
-// ───────── DIGITADOR LOGIC ─────────
+// ───────── LÓGICA DO DIGITADOR ─────────
 function updateMonth() {
   const dateStr = document.getElementById('f-data').value;
   if (dateStr) {
@@ -475,7 +414,7 @@ function fillParadaRow(el) {
 }
 
 function calcResumo() {
-  // Production
+  // Cálculo de produção
   let totalQtd = 0;
   let totalHProd = 0;
   document.querySelectorAll('#pecas-body tr').forEach(tr => {
@@ -487,7 +426,7 @@ function calcResumo() {
     totalHProd += hProd;
   });
 
-  // Stoppages
+  // Cálculo de paradas
   let totalHPar = 0;
   document.querySelectorAll('#paradas-body tr').forEach(tr => {
     const h = parseFloat(tr.querySelector('.parada-horas').value) || 0;
@@ -508,6 +447,7 @@ function calcResumo() {
   document.getElementById('res-util').textContent = util.toFixed(1) + '%';
 }
 
+
 async function saveRegisto() {
   const data = document.getElementById('f-data').value;
   const mes = document.getElementById('f-mes').value;
@@ -519,7 +459,7 @@ async function saveRegisto() {
   const hInicio = document.getElementById('f-h-inicio').value;
   const hFim = document.getElementById('f-h-fim').value;
   const hDisp = document.getElementById('f-hdisp').value;
-  const hProg = document.getElementById('f-hprog').value;
+  const hProg = parseFloat(document.getElementById('f-hprog').value) || 0;
 
   if (!data || !codOper || !codMaq) {
     showToast('Atenção: Cabeçalho incompleto!', 'err');
@@ -529,34 +469,35 @@ async function saveRegisto() {
   const pecaRows = document.querySelectorAll('#pecas-body tr');
   const paradaRows = document.querySelectorAll('#paradas-body tr');
 
-  // We will save one record per production row, or just one if no production but has stoppage
-  // However, the rule says "Save on Supabase". Let's follow the standard of one row per cycle if possible.
-  // For now, let's save the summarized turn to 'registros_cronoanalise' or similar.
-  // To keep it equal to the spreadsheet "Digitador" view, we save each production line.
-
-  const records = [];
-  
   if (pecaRows.length === 0 && paradaRows.length === 0) {
     showToast('Adicione ao menos um registro!', 'err');
     return;
   }
 
-  // Common data
+  // Pré-cálculo das horas de parada para eficiência correta (REGRA 1.1)
+  let totalHPar = 0;
+  paradaRows.forEach(tr => {
+    totalHPar += parseFloat(tr.querySelector('.parada-horas').value) || 0;
+  });
+  const hTrab = Math.max(0, hProg - totalHPar);
+
   const base = {
-    data, 
-    mes: parseInt(mes) || null, 
-    turno, 
-    cod_oper: codOper, 
-    desc_oper: descOper, 
-    cod_maq: codMaq, 
+    data,
+    mes: parseInt(mes) || null,
+    turno,
+    cod_oper: codOper,
+    desc_oper: descOper,
+    cod_maq: codMaq,
     desc_maq: descMaq,
-    h_inicio: hInicio || null, 
-    h_fim: hFim || null, 
-    h_disponivel: parseFloat(hDisp) || 0, 
-    h_programada: parseFloat(hProg) || 0
+    h_inicio: hInicio || null,
+    h_fim: hFim || null,
+    h_disponivel: parseFloat(hDisp) || 0,
+    h_programada: hProg
   };
 
-  // If we have production rows
+  const records = [];
+
+  // Linhas de produção — eficiência usa hTrab (horas líquidas produtivas)
   pecaRows.forEach(tr => {
     const qtd = parseFloat(tr.querySelector('.peca-qtd').value) || 0;
     const pad = parseFloat(tr.querySelector('.peca-padrao').value) || 0;
@@ -567,12 +508,12 @@ async function saveRegisto() {
       qtd,
       tp_padrao: pad,
       h_produtiva: hProd,
-      eficiencia: hProd > 0 ? (hProd / (parseFloat(hProg) || 1)) * 100 : 0, // Placeholder calculation
+      eficiencia: hTrab > 0 ? (hProd / hTrab) * 100 : 0,
       tipo_registro: 'PRODUCAO'
     });
   });
 
-  // If we have stoppage rows
+  // Linhas de parada
   paradaRows.forEach(tr => {
     records.push({
       ...base,
@@ -592,8 +533,12 @@ async function saveRegisto() {
     clearForm();
     await loadData();
     renderAll();
+    if (document.getElementById('page-banco')?.classList.contains('active')) {
+      renderDatabase();
+    }
   }
 }
+
 
 function clearForm() {
   document.getElementById('pecas-body').innerHTML = '';
@@ -615,7 +560,7 @@ function renderAll() {
   }
 
   const totalProduced = STATE.registros.reduce((sum, r) => sum + (r.qtd || 0), 0);
-  const totalHDisp = STATE.registros[0].h_disponivel || 8.8; 
+  const totalHDisp = STATE.registros.reduce((max, r) => Math.max(max, r.h_disponivel || 0), 0) || 8.8;
   const totalHProd = STATE.registros.reduce((sum, r) => sum + (r.h_produtiva || 0), 0);
   const residual = Math.max(0, totalHDisp - totalHProd);
   
@@ -630,7 +575,7 @@ function renderAll() {
   const gargalosCount = STATE.registros.filter(r => r.tipo_registro === 'PRODUCAO' && (r.eficiencia || 0) < 80).length;
   document.getElementById('kpi-gargalos').textContent = gargalosCount;
 
-  // Rule 4: Executive Summary
+  // Regra 4: Resumo Executivo
   const parecer = document.getElementById('parecer-consultivo');
   const worst = [...STATE.registros].filter(r => r.tp_padrao > 0).sort((a,b) => a.eficiencia - b.eficiencia)[0];
   
@@ -648,7 +593,7 @@ function renderAll() {
     `;
   }
 
-  // Rule 4: Comparative Table
+  // Regra 4: Tabela Comparativa
   const tableComp = document.getElementById('table-comparativa');
   const latestProd = STATE.registros.filter(r => r.tipo_registro === 'PRODUCAO').slice(0, 5);
   if (latestProd.length > 0) {
@@ -662,7 +607,7 @@ function renderAll() {
     `).join('');
   }
 
-  // Rule 4: Ganhos e Alertas
+  // Regra 4: Ganhos e Alertas
   const ganhos = document.getElementById('ganhos-alertas');
   ganhos.innerHTML = `
     <div class="config-row" style="border-left:3px solid var(--success)">
@@ -673,9 +618,9 @@ function renderAll() {
     </div>
   `;
 
-  // Rule 4: Projeção
+  // Regra 4: Projeção de Entrega
   const proj = document.getElementById('projecao-entrega');
-  const remTime = Math.max(0, 8.8 - totalHProd); // Simplified
+  const remTime = Math.max(0, 8.8 - totalHProd); // Tempo restante no turno
   const estimated = Math.floor(avgEfic > 0 ? (totalProduced / (totalHProd || 1)) * remTime : 0);
   proj.innerHTML = `<strong>${estimated} peças</strong> estimadas para o restante do turno baseado no ritmo atual.`;
 }
@@ -695,7 +640,9 @@ function fillMaq() {
 function exportCSV() {
   if (STATE.registros.length === 0) return;
   const headers = Object.keys(STATE.registros[0]).join(',');
-  const rows = STATE.registros.map(r => Object.values(r).join(',')).join('\n');
+  const rows = STATE.registros.map(r =>
+    Object.values(r).map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')
+  ).join('\n');
   const blob = new Blob([headers + '\n' + rows], { type: 'text/csv' });
   const url = window.URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -712,7 +659,7 @@ async function simulateData() {
   const records = [];
   const today = new Date().toISOString().split('T')[0];
   
-  // 10 Paradas
+  // 10 Paradas simuladas
   for(let i=0; i<10; i++) {
     const op = opers[Math.floor(Math.random() * opers.length)];
     const mq = maqs[Math.floor(Math.random() * maqs.length)];
@@ -736,7 +683,7 @@ async function simulateData() {
     const mq = maqs[Math.floor(Math.random() * maqs.length)];
     const peca = pecas[i];
     const qtd = Math.floor(Math.random() * 100 + 50);
-    const tp = (Math.random() * 5 + 10).toFixed(2); // Pç/H
+    const tp = (Math.random() * 5 + 10).toFixed(2); // Peças/hora
     const hProd = (qtd / parseFloat(tp)).toFixed(2);
 
     records.push({
@@ -760,10 +707,27 @@ async function simulateData() {
   }
 }
 
+// Lógica de deleção em massa — acionada pelo modal de confirmação
+async function clearDB() {
+  const { error } = await sb.from('registros_cronoanalise').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+  if (!error) {
+    showToast('Base de dados de tempos limpa com sucesso!', 'ok');
+    await loadData();
+    renderAll();
+    if (document.getElementById('page-banco')?.classList.contains('active')) renderDatabase();
+  } else {
+    showToast('Erro ao limpar base de dados', 'err');
+  }
+}
+
+// updateParadaDesc: alias público de fillParadaRow para compatibilidade com o HTML
+function updateParadaDesc(el) { fillParadaRow(el); }
+
 window.simulateData = simulateData;
 window.delRegistro = delRegistro;
 window.clearFilters = clearFilters;
 window.confirmClear = confirmClear;
+window.clearDB = clearDB;
 window.exportCSV = exportCSV;
 window.addConfig = addConfig;
 window.removeConfig = removeConfig;
@@ -774,4 +738,7 @@ window.setPage = setPage;
 window.toggleTheme = toggleTheme;
 window.fillOper = fillOper;
 window.fillMaq = fillMaq;
+window.fillParadaRow = fillParadaRow;
 window.updateParadaDesc = updateParadaDesc;
+
+console.log('SOMA: Sistema inicializado com sucesso.');
