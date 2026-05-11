@@ -60,6 +60,7 @@ function fillSelects() {
   const sSetor = document.getElementById('f-codsetor');
   const fOper = document.getElementById('filter-oper');
   const fSetor = document.getElementById('filter-setor');
+  const pOper = document.getElementById('particular-oper');
   
   if (sOper) {
     sOper.innerHTML = '<option value="">Selecione</option>' + 
@@ -80,6 +81,10 @@ function fillSelects() {
   if (fSetor) {
     fSetor.innerHTML = '<option value="">Todos Setores</option>' + 
       STATE.setores.map(s => `<option value="${s.cod}">${s.cod} - ${s.desc}</option>`).join('');
+  }
+  if (pOper) {
+    pOper.innerHTML = '<option value="">— Selecione um operador —</option>' + 
+      STATE.operadores.map(o => `<option value="${o.cod}">${o.cod} - ${o.nome}${o.meta ? ' (Meta: ' + o.meta + '%)' : ''}</option>`).join('');
   }
 }
 
@@ -105,6 +110,7 @@ function setPage(p) {
   if (p === 'banco') renderDatabase();
   if (p === 'paradas') renderParadas();
   if (p === 'config') renderConfigTable();
+  if (p === 'particular') renderParticular();
 }
 
 function renderDatabase() {
@@ -299,7 +305,11 @@ async function addConfig(type) {
 
   if (type === 'oper') {
     table = 'operadores';
-    payload = { cod: document.getElementById('new-oper-cod').value, nome: document.getElementById('new-oper-nome').value.toUpperCase() };
+    payload = {
+      cod: document.getElementById('new-oper-cod').value,
+      nome: document.getElementById('new-oper-nome').value.toUpperCase(),
+      meta: parseFloat(document.getElementById('new-oper-meta').value) || 85
+    };
   } else if (type === 'maq') {
     table = 'maquinas';
     payload = { cod: document.getElementById('new-maq-cod').value, nome: document.getElementById('new-maq-nome').value.toUpperCase() };
@@ -325,13 +335,14 @@ async function addConfig(type) {
 
   const { error } = await sb.from(table).insert([payload]);
   if (error) {
-    showToast('Erro ao salvar configuração', 'err');
+    showToast('Erro ao salvar: ' + (error.message || error.code || 'verifique o Supabase'), 'err');
+    console.error('[addConfig] Erro Supabase:', error);
   } else {
     showToast('Configuração salva com sucesso!', 'ok');
     await loadConfig();
     renderConfigTable();
     // Limpar campos do formulário
-    if (type === 'oper') { document.getElementById('new-oper-cod').value=''; document.getElementById('new-oper-nome').value=''; }
+    if (type === 'oper') { document.getElementById('new-oper-cod').value=''; document.getElementById('new-oper-nome').value=''; document.getElementById('new-oper-meta').value=''; }
     if (type === 'maq') { document.getElementById('new-maq-cod').value=''; document.getElementById('new-maq-nome').value=''; }
     if (type === 'par') { document.getElementById('new-par-cod').value=''; document.getElementById('new-par-desc').value=''; }
     if (type === 'set') { document.getElementById('new-set-cod').value=''; document.getElementById('new-set-desc').value=''; }
@@ -415,6 +426,9 @@ function addPecaRow() {
     <td><input type="number" value="0" class="peca-qtd" oninput="calcResumo()"></td>
     <td><input type="number" value="0.00" step="0.01" class="peca-padrao" oninput="calcResumo()"></td>
     <td class="row-hprod">0.0000</td>
+    <td><input type="number" value="0.000" step="0.001" class="peca-kwa" oninput="calcResumo()"></td>
+    <td class="row-kwa-medio">0.000</td>
+    <td><input type="text" placeholder="ex: A" class="peca-classe" style="width:70px;"></td>
     <td><button class="btn-del" onclick="this.parentElement.parentElement.remove(); calcResumo();">×</button></td>
   `;
   tbody.appendChild(tr);
@@ -456,7 +470,10 @@ function calcResumo() {
     const qtd = parseFloat(tr.querySelector('.peca-qtd').value) || 0;
     const pad = parseFloat(tr.querySelector('.peca-padrao').value) || 0;
     const hProd = pad > 0 ? qtd / pad : 0;
+    const kwa = parseFloat(tr.querySelector('.peca-kwa')?.value) || 0;
+    const kwaM = qtd > 0 ? kwa / qtd : 0;
     tr.querySelector('.row-hprod').textContent = hProd.toFixed(4);
+    if (tr.querySelector('.row-kwa-medio')) tr.querySelector('.row-kwa-medio').textContent = kwaM.toFixed(3);
     totalQtd += qtd;
     totalHProd += hProd;
   });
@@ -541,6 +558,7 @@ async function saveRegisto() {
     const qtd = parseFloat(tr.querySelector('.peca-qtd').value) || 0;
     const pad = parseFloat(tr.querySelector('.peca-padrao').value) || 0;
     const hProd = pad > 0 ? qtd / pad : 0;
+    const kwa = parseFloat(tr.querySelector('.peca-kwa')?.value) || 0;
     records.push({
       ...base,
       cod_peca: tr.querySelector('.peca-cod').value,
@@ -548,6 +566,9 @@ async function saveRegisto() {
       tp_padrao: pad,
       h_produtiva: hProd,
       eficiencia: hTrab > 0 ? (hProd / hTrab) * 100 : 0,
+      kwa_total: kwa,
+      kwa_medio: qtd > 0 ? kwa / qtd : 0,
+      classe_equipamento: tr.querySelector('.peca-classe')?.value || null,
       tipo_registro: 'PRODUCAO'
     });
   });
@@ -757,9 +778,10 @@ async function clearDB() {
   const { error } = await sb.from('registros_cronoanalise').delete().neq('id', '00000000-0000-0000-0000-000000000000');
   if (!error) {
     showToast('Base de dados de tempos limpa com sucesso!', 'ok');
+    closeModal();
     await loadData();
     renderAll();
-    if (document.getElementById('page-banco')?.classList.contains('active')) renderDatabase();
+    setPage('dashboard'); // Retorna ao menu principal após limpeza
   } else {
     showToast('Erro ao limpar base de dados', 'err');
   }
@@ -767,6 +789,126 @@ async function clearDB() {
 
 // updateParadaDesc: alias público de fillParadaRow para compatibilidade com o HTML
 function updateParadaDesc(el) { fillParadaRow(el); }
+
+// ─────────── ANÁLISE PARTICULAR ────────────────────────────────────────────
+let chartParticular = null;
+
+function renderParticular() {
+  const codOper = document.getElementById('particular-oper')?.value;
+  const content = document.getElementById('particular-content');
+  const empty   = document.getElementById('particular-empty');
+
+  if (!codOper) {
+    if (content) content.style.display = 'none';
+    if (empty)   empty.style.display   = 'block';
+    return;
+  }
+
+  if (content) content.style.display = 'block';
+  if (empty)   empty.style.display   = 'none';
+
+  const operData = STATE.operadores.find(o => o.cod === codOper);
+  const records  = STATE.registros.filter(r => r.cod_oper === codOper && r.tipo_registro === 'PRODUCAO');
+  const meta     = parseFloat(operData?.meta) || 85;
+
+  // H. Programadas — soma única por turno/dia
+  const turnos = new Set(records.map(r => `${r.data}_${r.turno}`));
+  let totalHProg = 0;
+  turnos.forEach(key => {
+    const rec = records.find(r => `${r.data}_${r.turno}` === key);
+    totalHProg += rec?.h_programada || 0;
+  });
+
+  const totalHTrab = records.reduce((s, r) => s + (r.h_produtiva || 0), 0);
+  const avgEfic    = records.length > 0
+    ? records.reduce((s, r) => s + (r.eficiencia || 0), 0) / records.length : 0;
+
+  document.getElementById('part-hprog').textContent = totalHProg.toFixed(2) + 'h';
+  document.getElementById('part-htrab').textContent = totalHTrab.toFixed(4) + 'h';
+  document.getElementById('part-meta').textContent  = meta + '%';
+  document.getElementById('part-efic').textContent  = avgEfic.toFixed(1) + '%';
+
+  const eficCard = document.getElementById('part-efic-card');
+  if (eficCard) {
+    eficCard.className = 'card kpi ' +
+      (avgEfic >= meta ? 'accent' : avgEfic >= meta * 0.85 ? 'warn' : 'danger');
+  }
+
+  const badge = document.getElementById('part-meta-badge');
+  if (badge) badge.textContent = operData ? `${operData.nome} — Meta: ${meta}%` : '';
+
+  // Agrupamento por projeto (cod_peca)
+  const pm = {};
+  records.forEach(r => {
+    const k = r.cod_peca || 'N/A';
+    if (!pm[k]) pm[k] = { cod_peca: k, qtd: 0, kwa: 0, efic_sum: 0, count: 0, classe: r.classe_equipamento || '-', maq: r.cod_maq || '-' };
+    pm[k].qtd      += r.qtd || 0;
+    pm[k].kwa      += r.kwa_total || 0;
+    pm[k].efic_sum += r.eficiencia || 0;
+    pm[k].count++;
+  });
+  const projects = Object.values(pm);
+
+  const tbody = document.getElementById('part-projects-body');
+  if (tbody) {
+    tbody.innerHTML = projects.length === 0
+      ? '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--muted);">Nenhum projeto registrado para este profissional.</td></tr>'
+      : projects.map(p => {
+          const kwaM  = p.qtd > 0 ? (p.kwa / p.qtd) : 0;
+          const eficP = p.count > 0 ? p.efic_sum / p.count : 0;
+          return `<tr>
+            <td><strong>${p.cod_peca}</strong></td>
+            <td>${p.qtd}</td>
+            <td>${p.kwa.toFixed(3)}</td>
+            <td>${kwaM.toFixed(3)}</td>
+            <td><span class="status-badge">${p.classe}</span></td>
+            <td>${p.maq}</td>
+            <td><span class="status-badge ${getStatusClass(eficP)}">${eficP.toFixed(1)}%</span></td>
+          </tr>`;
+        }).join('');
+  }
+
+  // Gráfico de barras com linha de meta
+  const ctx = document.getElementById('chart-particular');
+  if (!ctx) return;
+  if (chartParticular) chartParticular.destroy();
+  chartParticular = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: projects.map(p => p.cod_peca),
+      datasets: [
+        {
+          label: 'Eficiência (%)',
+          data: projects.map(p => p.count > 0 ? (p.efic_sum / p.count).toFixed(1) : 0),
+          backgroundColor: projects.map(p => {
+            const e = p.count > 0 ? p.efic_sum / p.count : 0;
+            return e >= 95 ? '#00f2c3' : e >= 80 ? '#ffd700' : '#ff4d6d';
+          }),
+          borderRadius: 5
+        },
+        {
+          label: 'Meta (%)',
+          data: projects.map(() => meta),
+          type: 'line',
+          borderColor: '#4d94ff',
+          borderDash: [6, 4],
+          pointRadius: 0,
+          borderWidth: 2,
+          fill: false
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#8b949e' } } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#8b949e' } },
+        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#8b949e' }, suggestedMax: 120 }
+      }
+    }
+  });
+}
 
 window.simulateData = simulateData;
 window.delRegistro = delRegistro;
@@ -786,5 +928,6 @@ window.fillMaq = fillMaq;
 window.fillSetor = fillSetor;
 window.fillParadaRow = fillParadaRow;
 window.updateParadaDesc = updateParadaDesc;
+window.renderParticular = renderParticular;
 
 console.log('SOMA: Sistema inicializado com sucesso.');

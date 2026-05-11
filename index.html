@@ -32,6 +32,9 @@
     <div class="nav-item" onclick="setPage('paradas')" id="nav-paradas">
       <span class="nav-icon">🛑</span><span>Análise Paradas</span>
     </div>
+    <div class="nav-item" onclick="setPage('particular')" id="nav-particular">
+      <span class="nav-icon">👤</span><span>Análise Particular</span>
+    </div>
     <div class="nav-item" onclick="setPage('config')" id="nav-config">
       <span class="nav-icon">⚙️</span><span>Configurações</span>
     </div>
@@ -201,6 +204,9 @@
                 <th>Qtd. Produzida</th>
                 <th>Padrão Pç/H</th>
                 <th>Horas Produtivas</th>
+                <th>KWA Total</th>
+                <th>KWA Médio</th>
+                <th>Classe Equip.</th>
                 <th></th>
               </tr>
             </thead>
@@ -343,7 +349,87 @@
     </div>
   </div>
 
+  <!-- ANÁLISE PARTICULAR -->
+  <div class="page" id="page-particular">
+
+    <!-- Seletor de profissional -->
+    <div class="card mb-24">
+      <div class="card-title">👤 SELECIONAR PROFISSIONAL</div>
+      <div class="row" style="gap:12px; align-items:center;">
+        <select id="particular-oper" onchange="renderParticular()" style="flex:1; max-width:420px;">
+          <option value="">— Selecione um operador —</option>
+        </select>
+        <span id="part-meta-badge" style="font-size:13px; color:var(--muted);"></span>
+      </div>
+    </div>
+
+    <!-- Estado vazio -->
+    <div id="particular-empty" class="card" style="text-align:center; padding:60px 20px;">
+      <div style="font-size:52px; margin-bottom:16px;">📊</div>
+      <div style="color:var(--muted); font-size:14px;">Selecione um profissional para visualizar sua análise de desempenho individual.</div>
+    </div>
+
+    <!-- Conteúdo carregado -->
+    <div id="particular-content" style="display:none;">
+      <!-- KPIs -->
+      <div class="grid-4 mb-24">
+        <div class="card kpi blue">
+          <div class="card-title">Horas Programadas</div>
+          <div class="val" id="part-hprog">0h</div>
+          <div class="lbl">Total no Período</div>
+        </div>
+        <div class="card kpi warn">
+          <div class="card-title">Horas Trabalhadas</div>
+          <div class="val" id="part-htrab">0h</div>
+          <div class="lbl">Produção Real</div>
+        </div>
+        <div class="card kpi accent">
+          <div class="card-title">Meta de Eficiência</div>
+          <div class="val" id="part-meta">85%</div>
+          <div class="lbl">Alvo do Profissional</div>
+        </div>
+        <div class="card kpi" id="part-efic-card">
+          <div class="card-title">Eficiência Alcançada</div>
+          <div class="val" id="part-efic">0%</div>
+          <div class="lbl">vs. Meta</div>
+        </div>
+      </div>
+
+      <!-- Projetos + Gráfico -->
+      <div class="grid-2 mb-24">
+        <div class="card">
+          <div class="card-title">PROJETOS DO PROFISSIONAL</div>
+          <div class="table-wrap">
+            <table class="paradas-table">
+              <thead>
+                <tr>
+                  <th>Projeto / Peça</th>
+                  <th>Qtd. Produzida</th>
+                  <th>KWA Total</th>
+                  <th>KWA Médio</th>
+                  <th>Classe Equip.</th>
+                  <th>Máquina</th>
+                  <th>Eficiência</th>
+                </tr>
+              </thead>
+              <tbody id="part-projects-body">
+                <tr><td colspan="7" style="text-align:center;padding:20px;color:var(--muted);">Sem projetos.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">DESEMPENHO POR PROJETO</div>
+          <div style="height:300px; position:relative;">
+            <canvas id="chart-particular"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- CONFIGURAÇÕES (RULE 1.4) -->
+
   <div class="page" id="page-config">
     <div class="grid-2">
       <div class="card">
@@ -352,6 +438,7 @@
         <div class="row mt-16">
           <input type="text" id="new-oper-cod" placeholder="Cód" style="width:60px;">
           <input type="text" id="new-oper-nome" placeholder="Nome Completo" style="flex:1;">
+          <input type="number" id="new-oper-meta" placeholder="Meta %" style="width:75px;" min="0" max="100" step="1">
           <button class="btn btn-primary btn-sm" onclick="addConfig('oper')">+</button>
         </div>
       </div>
