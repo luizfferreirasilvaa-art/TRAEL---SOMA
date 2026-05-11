@@ -8,6 +8,7 @@ let STATE = {
   operadores: [],
   maquinas: [],
   paradas: [],
+  setores: [],
   registros: []
 };
 
@@ -29,10 +30,12 @@ async function loadConfig() {
     const { data: oper } = await sb.from('operadores').select('*');
     const { data: maq } = await sb.from('maquinas').select('*');
     const { data: par } = await sb.from('paradas_motivos').select('*');
+    const { data: set } = await sb.from('setores').select('*');
     
     STATE.operadores = oper || [];
     STATE.maquinas = maq || [];
     STATE.paradas = par || [];
+    STATE.setores = set || [];
     
     fillSelects();
   } catch (err) {
@@ -54,7 +57,9 @@ async function loadData() {
 function fillSelects() {
   const sOper = document.getElementById('f-codoper');
   const sMaq = document.getElementById('f-codmaq');
+  const sSetor = document.getElementById('f-codsetor');
   const fOper = document.getElementById('filter-oper');
+  const fSetor = document.getElementById('filter-setor');
   
   if (sOper) {
     sOper.innerHTML = '<option value="">Selecione</option>' + 
@@ -64,9 +69,17 @@ function fillSelects() {
     sMaq.innerHTML = '<option value="">Selecione</option>' + 
       STATE.maquinas.map(m => `<option value="${m.cod}">${m.cod} - ${m.nome}</option>`).join('');
   }
+  if (sSetor) {
+    sSetor.innerHTML = '<option value="">Selecione</option>' + 
+      STATE.setores.map(s => `<option value="${s.cod}">${s.cod} - ${s.desc}</option>`).join('');
+  }
   if (fOper) {
     fOper.innerHTML = '<option value="">Todos Operadores</option>' + 
       STATE.operadores.map(o => `<option value="${o.cod}">${o.nome}</option>`).join('');
+  }
+  if (fSetor) {
+    fSetor.innerHTML = '<option value="">Todos Setores</option>' + 
+      STATE.setores.map(s => `<option value="${s.cod}">${s.cod} - ${s.desc}</option>`).join('');
   }
 }
 
@@ -100,13 +113,15 @@ function renderDatabase() {
 
   const fPeca = document.getElementById('filter-peca').value.toLowerCase();
   const fOper = document.getElementById('filter-oper').value;
+  const fSetor = document.getElementById('filter-setor')?.value || '';
   const fData = document.getElementById('filter-data').value;
 
   const filtered = STATE.registros.filter(r => {
     const mPeca = !fPeca || (r.cod_peca && r.cod_peca.toLowerCase().includes(fPeca));
     const mOper = !fOper || r.cod_oper === fOper;
+    const mSetor = !fSetor || r.cod_setor === fSetor;
     const mData = !fData || r.data === fData;
-    return mPeca && mOper && mData;
+    return mPeca && mOper && mSetor && mData;
   });
 
   if (filtered.length === 0) {
@@ -149,6 +164,8 @@ async function delRegistro(id) {
 function clearFilters() {
   document.getElementById('filter-peca').value = '';
   document.getElementById('filter-oper').value = '';
+  const fSetor = document.getElementById('filter-setor');
+  if (fSetor) fSetor.value = '';
   document.getElementById('filter-data').value = '';
   renderDatabase();
 }
@@ -238,6 +255,7 @@ async function renderConfigTable() {
   const lOper = document.getElementById('list-oper');
   const lMaq = document.getElementById('list-maq');
   const lPar = document.getElementById('list-parada-motivos');
+  const lSet = document.getElementById('list-setores');
 
   if (lOper) {
     lOper.innerHTML = STATE.operadores.map(o => `
@@ -263,6 +281,16 @@ async function renderConfigTable() {
       </div>
     `).join('');
   }
+  if (lSet) {
+    lSet.innerHTML = STATE.setores.length === 0
+      ? '<p style="color:var(--muted);font-size:13px;"><em>Nenhum setor cadastrado.</em></p>'
+      : STATE.setores.map(s => `
+      <div class="config-row">
+        <span><strong>${s.cod}</strong> - ${s.desc}</span>
+        <button class="btn-del" onclick="removeConfig('setores', '${s.id}')">×</button>
+      </div>
+    `).join('');
+  }
 }
 
 async function addConfig(type) {
@@ -282,6 +310,12 @@ async function addConfig(type) {
       "desc": document.getElementById('new-par-desc').value.toUpperCase(),
       tipo: document.getElementById('new-par-tipo').value
     };
+  } else if (type === 'set') {
+    table = 'setores';
+    payload = {
+      cod: document.getElementById('new-set-cod').value.toUpperCase(),
+      desc: document.getElementById('new-set-desc').value.toUpperCase()
+    };
   }
 
   if (!payload.cod) {
@@ -300,6 +334,7 @@ async function addConfig(type) {
     if (type === 'oper') { document.getElementById('new-oper-cod').value=''; document.getElementById('new-oper-nome').value=''; }
     if (type === 'maq') { document.getElementById('new-maq-cod').value=''; document.getElementById('new-maq-nome').value=''; }
     if (type === 'par') { document.getElementById('new-par-cod').value=''; document.getElementById('new-par-desc').value=''; }
+    if (type === 'set') { document.getElementById('new-set-cod').value=''; document.getElementById('new-set-desc').value=''; }
   }
 }
 
@@ -456,6 +491,8 @@ async function saveRegisto() {
   const descOper = document.getElementById('f-descoper').value;
   const codMaq = document.getElementById('f-codmaq').value;
   const descMaq = document.getElementById('f-descmaq').value;
+  const codSetor = document.getElementById('f-codsetor').value;
+  const descSetor = STATE.setores.find(s => s.cod === codSetor)?.desc || '';
   const hInicio = document.getElementById('f-h-inicio').value;
   const hFim = document.getElementById('f-h-fim').value;
   const hDisp = document.getElementById('f-hdisp').value;
@@ -489,6 +526,8 @@ async function saveRegisto() {
     desc_oper: descOper,
     cod_maq: codMaq,
     desc_maq: descMaq,
+    cod_setor: codSetor || null,
+    desc_setor: descSetor || null,
     h_inicio: hInicio || null,
     h_fim: hFim || null,
     h_disponivel: parseFloat(hDisp) || 0,
@@ -637,6 +676,12 @@ function fillMaq() {
   document.getElementById('f-descmaq').value = m ? m.nome : '';
 }
 
+function fillSetor() {
+  const cod = document.getElementById('f-codsetor').value;
+  const s = STATE.setores.find(x => x.cod === cod);
+  document.getElementById('f-descsetor').value = s ? s.desc : '';
+}
+
 function exportCSV() {
   if (STATE.registros.length === 0) return;
   const headers = Object.keys(STATE.registros[0]).join(',');
@@ -738,6 +783,7 @@ window.setPage = setPage;
 window.toggleTheme = toggleTheme;
 window.fillOper = fillOper;
 window.fillMaq = fillMaq;
+window.fillSetor = fillSetor;
 window.fillParadaRow = fillParadaRow;
 window.updateParadaDesc = updateParadaDesc;
 
