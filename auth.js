@@ -94,12 +94,14 @@ const AUTH = {
       // Dashboard: somente leitura — OK
       // Base de Dados: somente leitura — ocultar coluna "Ação"
       _hideEls('[data-rbac="delete-btn"]');
-      // Configurações: ocultar Operadores e Setores
+      // Configurações: ocultar Operadores, Setores e Empresas
       _hideEl('config-operadores-section');
       _hideEl('config-setores-section');
-      // Ocultar botões de configuração de operadores/setores
+      _hideEl('config-empresas-section');
+      // Ocultar botões de configuração correspondentes
       _hideEl('btn-add-oper');
       _hideEl('btn-add-set');
+      _hideEl('btn-add-emp');
       // Análise Paradas/Particular: somente leitura — OK
     }
   },
