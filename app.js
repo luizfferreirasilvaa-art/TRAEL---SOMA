@@ -1,7 +1,11 @@
-// ───────── CONFIGURAÇÃO DO SUPABASE ─────────
-const SUPABASE_URL = 'https://ccytzaruxdbtqqblpciq.supabase.co'; 
-const SUPABASE_KEY = 'sb_publishable_IowVi8PFf6gDSzjpC8EgQA_sFzzkvsv';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// ───────── CONFIGURAÇÃO DO SUPABASE (herdado de auth.js) ─────────
+// `sb` e `AUTH` são injetados por auth.js (carregado antes deste arquivo)
+// Garante compatibilidade mesmo se auth.js ainda não rodou
+if (typeof sb === 'undefined') {
+  const _url = 'https://ccytzaruxdbtqqblpciq.supabase.co';
+  const _key = 'sb_publishable_IowVi8PFf6gDSzjpC8EgQA_sFzzkvsv';
+  window.sb = supabase.createClient(_url, _key);
+}
 
 // ───────── ESTADO GLOBAL ─────────
 let STATE = {
@@ -14,12 +18,19 @@ let STATE = {
 
 // ───────── INICIALIZAÇÃO ─────────
 window.onload = async () => {
+  // 1. Verificar autenticação (redireciona para login.html se não logado)
+  const authenticated = await AUTH.init();
+  if (!authenticated) return;
+
   showToast('Sincronizando com a base de dados de tempos...', 'ok');
   await loadConfig();
   await loadData();
   renderAll();
-  
-  // Verificação de tema salvo
+
+  // 2. Aplicar regras de acesso baseadas no perfil
+  AUTH.applyRBAC();
+
+  // 3. Verificação de tema salvo
   if (localStorage.getItem('soma-theme') === 'light') {
     document.body.classList.add('light-theme');
   }
@@ -105,12 +116,21 @@ function setPage(p) {
   const nav = document.getElementById('nav-' + p);
   if (nav) nav.classList.add('active');
   
-  document.getElementById('page-title').textContent = p.charAt(0).toUpperCase() + p.slice(1).replace('-',' ');
+  document.getElementById('page-title').textContent = {
+    dashboard: 'Dashboard Operacional',
+    digitador: 'Digitador',
+    banco: 'Base de Dados de Tempos',
+    paradas: 'Análise de Paradas',
+    particular: 'Análise Particular',
+    config: 'Configurações',
+    auditoria: 'Últimas Alterações'
+  }[p] || p;
 
   if (p === 'banco') renderDatabase();
   if (p === 'paradas') renderParadas();
   if (p === 'config') renderConfigTable();
   if (p === 'particular') renderParticular();
+  if (p === 'auditoria') renderAuditoria();
 }
 
 function renderDatabase() {
@@ -135,6 +155,9 @@ function renderDatabase() {
     return;
   }
 
+  // Botão excluir: visível apenas para programador e coordenador
+  const canDelete = AUTH.isMinCoordenador();
+
   list.innerHTML = filtered.map(r => `
     <tr>
       <td>${new Date(r.data).toLocaleDateString('pt-BR')}</td>
@@ -144,7 +167,7 @@ function renderDatabase() {
       <td>${r.qtd || 0}</td>
       <td>${r.tipo_registro === 'PRODUCAO' ? (r.eficiencia ? r.eficiencia.toFixed(1)+'%' : '-') : '-'}</td>
       <td><span class="status-badge ${getStatusClass(r.eficiencia)}">${r.tipo_registro}</span></td>
-      <td><button class="btn btn-danger btn-sm" onclick="delRegistro('${r.id}')">Excluir</button></td>
+      <td>${canDelete ? `<button class="btn btn-danger btn-sm" data-rbac="delete-btn" onclick="delRegistro('${r.id}')">Excluir</button>` : '<span style="color:var(--text-muted);font-size:12px;">—</span>'}</td>
     </tr>
   `).join('');
 }
@@ -292,7 +315,7 @@ async function renderConfigTable() {
       ? '<p style="color:var(--muted);font-size:13px;"><em>Nenhum setor cadastrado.</em></p>'
       : STATE.setores.map(s => `
       <div class="config-row">
-        <span><strong>${s.cod}</strong> - ${s.descricao}</span>
+        <span><strong>${s.cod}</strong> - ${s.descricao}${s.meta ? ' <span style="color:var(--accent);font-size:12px;margin-left:8px;">Meta: <strong>${s.meta}%</strong></span>' : ''}</span>
         <button class="btn-del" onclick="removeConfig('setores', '${s.id}')">×</button>
       </div>
     `).join('');
@@ -307,8 +330,7 @@ async function addConfig(type) {
     table = 'operadores';
     payload = {
       cod: document.getElementById('new-oper-cod').value,
-      nome: document.getElementById('new-oper-nome').value.toUpperCase(),
-      meta: parseFloat(document.getElementById('new-oper-meta').value) || 85
+      nome: document.getElementById('new-oper-nome').value.toUpperCase()
     };
   } else if (type === 'maq') {
     table = 'maquinas';
@@ -324,7 +346,8 @@ async function addConfig(type) {
     table = 'setores';
     payload = {
       cod: document.getElementById('new-set-cod').value.toUpperCase(),
-      descricao: document.getElementById('new-set-desc').value.toUpperCase()
+      descricao: document.getElementById('new-set-desc').value.toUpperCase(),
+      meta: parseFloat(document.getElementById('new-set-meta').value) || null
     };
   }
 
@@ -342,10 +365,10 @@ async function addConfig(type) {
     await loadConfig();
     renderConfigTable();
     // Limpar campos do formulário
-    if (type === 'oper') { document.getElementById('new-oper-cod').value=''; document.getElementById('new-oper-nome').value=''; document.getElementById('new-oper-meta').value=''; }
+    if (type === 'oper') { document.getElementById('new-oper-cod').value=''; document.getElementById('new-oper-nome').value=''; }
     if (type === 'maq') { document.getElementById('new-maq-cod').value=''; document.getElementById('new-maq-nome').value=''; }
     if (type === 'par') { document.getElementById('new-par-cod').value=''; document.getElementById('new-par-desc').value=''; }
-    if (type === 'set') { document.getElementById('new-set-cod').value=''; document.getElementById('new-set-desc').value=''; }
+    if (type === 'set') { document.getElementById('new-set-cod').value=''; document.getElementById('new-set-desc').value=''; document.getElementById('new-set-meta').value=''; }
   }
 }
 
@@ -548,7 +571,11 @@ async function saveRegisto() {
     h_inicio: hInicio || null,
     h_fim: hFim || null,
     h_disponivel: parseFloat(hDisp) || 0,
-    h_programada: hProg
+    h_programada: hProg,
+    // Auditoria de quem salvou
+    created_by_name: (typeof AUTH !== 'undefined' && AUTH.name) ? AUTH.name : 'Sistema',
+    created_by_role: (typeof AUTH !== 'undefined' && AUTH.role) ? AUTH.role : 'desconhecido',
+    created_by_uid:  (typeof AUTH !== 'undefined' && AUTH.user) ? AUTH.user.id : null
   };
 
   const records = [];
@@ -809,7 +836,11 @@ function renderParticular() {
 
   const operData = STATE.operadores.find(o => o.cod === codOper);
   const records  = STATE.registros.filter(r => r.cod_oper === codOper && r.tipo_registro === 'PRODUCAO');
-  const meta     = parseFloat(operData?.meta) || 85;
+
+  // Meta vem do setor do operador — usa o setor do primeiro registro encontrado
+  const codSetor = records.length > 0 ? records[0].cod_setor : null;
+  const setorData = codSetor ? STATE.setores.find(s => s.cod === codSetor) : null;
+  const meta = parseFloat(setorData?.meta) || 85;
 
   // H. Programadas — soma única por turno/dia
   const turnos = new Set(records.map(r => `${r.data}_${r.turno}`));
@@ -910,6 +941,47 @@ function renderParticular() {
   });
 }
 
+// ─────────── AUDITORIA (só Programador) ────────────────────────────────────
+async function renderAuditoria() {
+  const tbody = document.getElementById('audit-body');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text-muted);">Carregando...</td></tr>';
+
+  try {
+    const { data, error } = await sb.from('registros_cronoanalise')
+      .select('id, created_at, cod_oper, tipo_registro, cod_peca, desc_parada, created_by_name, created_by_role')
+      .order('created_at', { ascending: false })
+      .limit(60);
+
+    if (error || !data || data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted);">Nenhuma alteração registrada.</td></tr>';
+      return;
+    }
+
+    const roleColors = { programador: '#00f2c3', coordenador: '#4d94ff', alimentador: '#ffd700' };
+    const roleLabels = { programador: '⚡ Programador', coordenador: '🎯 Coordenador', alimentador: '📋 Alimentador' };
+
+    tbody.innerHTML = data.map(r => {
+      const dt = r.created_at ? new Date(r.created_at).toLocaleString('pt-BR') : '-';
+      const role = r.created_by_role || 'desconhecido';
+      const color = roleColors[role] || '#8b949e';
+      const label = roleLabels[role] || role;
+      const motivo = r.tipo_registro === 'PRODUCAO' ? (r.cod_peca || '-') : (r.desc_parada || '-');
+      return `
+        <tr>
+          <td style="font-family:var(--font-mono);font-size:12px;">${dt}</td>
+          <td><strong>${r.cod_oper || '-'}</strong></td>
+          <td><span class="status-badge ${r.tipo_registro === 'PRODUCAO' ? 'status-padrão' : 'status-gargalo'}">${r.tipo_registro || '-'}</span></td>
+          <td>${motivo}</td>
+          <td style="font-size:13px;">${r.created_by_name || '<em style="color:var(--text-muted)">Não identificado</em>'}</td>
+          <td><span style="color:${color};font-size:12px;font-weight:700;">${label}</span></td>
+        </tr>`;
+    }).join('');
+  } catch (err) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--danger);">Erro ao carregar auditoria.</td></tr>';
+  }
+}
+
 window.simulateData = simulateData;
 window.delRegistro = delRegistro;
 window.clearFilters = clearFilters;
@@ -929,5 +1001,6 @@ window.fillSetor = fillSetor;
 window.fillParadaRow = fillParadaRow;
 window.updateParadaDesc = updateParadaDesc;
 window.renderParticular = renderParticular;
+window.renderAuditoria  = renderAuditoria;
 
-console.log('SOMA: Sistema inicializado com sucesso.');
+console.log('SOMA: Sistema inicializado com sucesso. v2.2 — RBAC ativo.');

@@ -10,6 +10,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Auth Module (deve ser carregado antes do app.js) -->
+<script src="auth.js"></script>
 </head>
 <body>
 
@@ -38,10 +40,13 @@
     <div class="nav-item" onclick="setPage('config')" id="nav-config">
       <span class="nav-icon">⚙️</span><span>Configurações</span>
     </div>
+    <div class="nav-item" onclick="setPage('auditoria')" id="nav-auditoria" style="display:none;">
+      <span class="nav-icon">📜</span><span>Últimas Alterações</span>
+    </div>
   </nav>
   <div class="sidebar-footer">
     <button class="btn btn-outline btn-sm" onclick="toggleTheme()" style="width:100%; margin-bottom:10px;">🌓 Alternar Tema</button>
-    v2.1 · SOMA MODULAR
+    <span style="font-size:11px;color:var(--text-muted);">v2.2 · SOMA MODULAR</span>
   </div>
 </div>
 
@@ -215,7 +220,7 @@
             </tbody>
           </table>
         </div>
-        <button class="btn btn-outline btn-sm mt-16" onclick="addPecaRow()">+ Linha Peça</button>
+        <button id="btn-add-peca" class="btn btn-outline btn-sm mt-16" onclick="addPecaRow()">+ Linha Peça</button>
       </div>
 
       <div class="form-section">
@@ -236,7 +241,7 @@
             </tbody>
           </table>
         </div>
-        <button class="btn btn-outline btn-sm mt-16" onclick="addParadaRow()">+ Linha Parada</button>
+        <button id="btn-add-parada" class="btn btn-outline btn-sm mt-16" onclick="addParadaRow()">+ Linha Parada</button>
       </div>
 
       <div class="form-section">
@@ -271,7 +276,7 @@
 
       <div class="flex-end mt-24">
         <button class="btn btn-outline" onclick="clearForm()">Limpar</button>
-        <button class="btn btn-primary" onclick="saveRegisto()">💾 Salvar Registro</button>
+        <button id="btn-salvar-registro" class="btn btn-primary" onclick="saveRegisto()">💾 Salvar Registro</button>
       </div>
     </div>
   </div>
@@ -431,17 +436,20 @@
   <!-- CONFIGURAÇÕES (RULE 1.4) -->
 
   <div class="page" id="page-config">
-    <div class="grid-2">
+    <!-- OPERADORES -->
+    <div id="config-operadores-section">
       <div class="card">
         <div class="card-title">OPERADORES</div>
         <div id="list-oper" class="config-list"></div>
-        <div class="row mt-16">
+        <div class="row mt-16" id="btn-add-oper">
           <input type="text" id="new-oper-cod" placeholder="Cód" style="width:60px;">
           <input type="text" id="new-oper-nome" placeholder="Nome Completo" style="flex:1;">
-          <input type="number" id="new-oper-meta" placeholder="Meta %" style="width:75px;" min="0" max="100" step="1">
           <button class="btn btn-primary btn-sm" onclick="addConfig('oper')">+</button>
         </div>
       </div>
+    </div>
+    <!-- MAQUINAS -->
+    <div>
       <div class="card">
         <div class="card-title">MÁQUINAS</div>
         <div id="list-maq" class="config-list"></div>
@@ -452,6 +460,7 @@
         </div>
       </div>
     </div>
+  </div>
     <div class="card mt-24">
       <div class="card-title">MOTIVOS DE PARADA</div>
       <div id="list-parada-motivos" class="config-list"></div>
@@ -465,13 +474,38 @@
         <button class="btn btn-primary btn-sm" onclick="addConfig('par')">+</button>
       </div>
     </div>
-    <div class="card mt-24">
+    <div class="card mt-24" id="config-setores-section">
       <div class="card-title">SETORES</div>
       <div id="list-setores" class="config-list"><em style="color:var(--muted);font-size:13px;">Carregando...</em></div>
-      <div class="row mt-16">
+      <div class="row mt-16" id="btn-add-set">
         <input type="text" id="new-set-cod" placeholder="Cód" style="width:60px;">
         <input type="text" id="new-set-desc" placeholder="Descrição do Setor" style="flex:1;">
+        <input type="number" id="new-set-meta" placeholder="Meta %" style="width:75px;" min="0" max="100" step="1">
         <button class="btn btn-primary btn-sm" onclick="addConfig('set')">+</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUDITORIA (só Programador) -->
+  <div class="page" id="page-auditoria">
+    <div class="card">
+      <div class="card-title">📜 ÚCLIMAS ALTERAÇÕES — AUDITORIA DO SISTEMA</div>
+      <div class="table-wrap">
+        <table class="paradas-table">
+          <thead>
+            <tr>
+              <th>Data/Hora</th>
+              <th>Operador</th>
+              <th>Tipo</th>
+              <th>Peça / Motivo</th>
+              <th>Registrado por</th>
+              <th>Perfil</th>
+            </tr>
+          </thead>
+          <tbody id="audit-body">
+            <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted);">Carregando auditoria...</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>

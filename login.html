@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOMA – Acesso ao Sistema</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --bg: #080a0f;
+    --surface: #11141d;
+    --card: #1a1e29;
+    --border: rgba(255,255,255,0.08);
+    --accent: #00f2c3;
+    --accent-glow: rgba(0,242,195,0.25);
+    --text: #ffffff;
+    --muted: #8b949e;
+    --danger: #ff4d6d;
+    --input-bg: #0d1117;
+    --font-mono: 'Space Mono', monospace;
+    --font-body: 'Inter', sans-serif;
+  }
+  body.light {
+    --bg: #f0f4f8;
+    --surface: #ffffff;
+    --card: #ffffff;
+    --border: rgba(0,0,0,0.1);
+    --accent: #00a884;
+    --accent-glow: rgba(0,168,132,0.2);
+    --text: #1a1f26;
+    --muted: #64748b;
+    --input-bg: #edf2f7;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    transition: background 0.4s, color 0.4s;
+    position: relative;
+  }
+
+  /* ── Fundo animado ── */
+  .bg-grid {
+    position: fixed; inset: 0; z-index: 0;
+    background-image:
+      linear-gradient(rgba(0,242,195,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,242,195,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    animation: gridMove 20s linear infinite;
+  }
+  body.light .bg-grid {
+    background-image:
+      linear-gradient(rgba(0,168,132,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,168,132,0.05) 1px, transparent 1px);
+  }
+  @keyframes gridMove {
+    from { background-position: 0 0; }
+    to { background-position: 60px 60px; }
+  }
+
+  .orb {
+    position: fixed; border-radius: 50%; filter: blur(120px); z-index: 0; pointer-events: none;
+  }
+  .orb-1 {
+    width: 500px; height: 500px;
+    background: rgba(0,242,195,0.07);
+    top: -150px; left: -150px;
+    animation: orbFloat 8s ease-in-out infinite;
+  }
+  .orb-2 {
+    width: 400px; height: 400px;
+    background: rgba(77,148,255,0.07);
+    bottom: -100px; right: -100px;
+    animation: orbFloat 10s ease-in-out infinite reverse;
+  }
+  @keyframes orbFloat {
+    0%,100% { transform: translate(0,0); }
+    50% { transform: translate(30px, -30px); }
+  }
+
+  /* ── Card ── */
+  .login-wrap {
+    position: relative; z-index: 10;
+    width: 100%; max-width: 440px;
+    padding: 20px;
+    animation: cardIn 0.6s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes cardIn {
+    from { opacity:0; transform: translateY(40px) scale(0.95); }
+    to   { opacity:1; transform: translateY(0) scale(1); }
+  }
+
+  .login-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 28px;
+    padding: 48px 40px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.4), 0 0 0 1px var(--border);
+    backdrop-filter: blur(20px);
+    position: relative;
+    overflow: hidden;
+  }
+  .login-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0.6;
+  }
+
+  /* ── Logo ── */
+  .logo-wrap {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  .logo-icon {
+    width: 64px; height: 64px;
+    background: linear-gradient(135deg, var(--accent), #00c9a7);
+    border-radius: 18px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 28px;
+    margin-bottom: 16px;
+    box-shadow: 0 8px 25px var(--accent-glow);
+    animation: iconPulse 3s ease-in-out infinite;
+  }
+  @keyframes iconPulse {
+    0%,100% { box-shadow: 0 8px 25px var(--accent-glow); }
+    50% { box-shadow: 0 8px 40px var(--accent-glow), 0 0 60px var(--accent-glow); }
+  }
+  .logo-name {
+    font-family: var(--font-mono);
+    font-size: 22px; font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 4px;
+  }
+  .logo-sub {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  /* ── Role indicator ── */
+  .role-badge {
+    display: none;
+    align-items: center; gap: 8px;
+    background: rgba(0,242,195,0.08);
+    border: 1px solid rgba(0,242,195,0.2);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 12px; font-weight: 600;
+    color: var(--accent);
+    margin: 0 auto 24px;
+    width: fit-content;
+    animation: fadeIn 0.4s;
+  }
+  .role-badge.show { display: flex; }
+  .role-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 6px var(--accent);
+  }
+
+  /* ── Form ── */
+  .form-label {
+    display: block;
+    font-size: 12px; font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+  }
+  .input-wrap { position: relative; margin-bottom: 20px; }
+  .input-icon {
+    position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+    font-size: 16px; pointer-events: none;
+    color: var(--muted);
+    transition: color 0.2s;
+  }
+  .login-input {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 16px 14px 48px;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 14px;
+    outline: none;
+    transition: all 0.3s;
+  }
+  .login-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-glow);
+  }
+  .login-input:focus ~ .input-icon { color: var(--accent); }
+
+  .pass-toggle {
+    position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer;
+    color: var(--muted); font-size: 16px;
+    transition: color 0.2s;
+  }
+  .pass-toggle:hover { color: var(--accent); }
+
+  /* ── Error ── */
+  .error-box {
+    display: none;
+    background: rgba(255,77,109,0.1);
+    border: 1px solid rgba(255,77,109,0.3);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #ff4d6d;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  .error-box.show { display: block; animation: shake 0.4s ease; }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-8px); }
+    75% { transform: translateX(8px); }
+  }
+
+  /* ── Button ── */
+  .btn-login {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--accent), #00c9a7);
+    color: #080a0f;
+    border: none; border-radius: 14px;
+    font-size: 15px; font-weight: 700;
+    font-family: var(--font-body);
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 6px 20px var(--accent-glow);
+    position: relative;
+    overflow: hidden;
+    letter-spacing: 0.5px;
+  }
+  .btn-login:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px var(--accent-glow);
+  }
+  .btn-login:active { transform: translateY(0); }
+  .btn-login:disabled { opacity: 0.7; cursor: not-allowed; }
+  .btn-login .spinner {
+    display: none;
+    width: 18px; height: 18px;
+    border: 2px solid rgba(8,10,15,0.3);
+    border-top-color: #080a0f;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto;
+  }
+  .btn-login.loading .btn-text { display: none; }
+  .btn-login.loading .spinner { display: block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Footer ── */
+  .login-footer {
+    text-align: center;
+    margin-top: 28px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .login-footer strong { color: var(--text); }
+
+  /* ── Theme toggle ── */
+  .theme-btn {
+    position: fixed; top: 24px; right: 24px; z-index: 100;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    width: 44px; height: 44px;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.3s;
+    color: var(--text);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  }
+  .theme-btn:hover { transform: rotate(20deg) scale(1.1); border-color: var(--accent); }
+
+  @keyframes fadeIn {
+    from { opacity:0; transform: scale(0.9); }
+    to { opacity:1; transform: scale(1); }
+  }
+
+  /* Autofill fix */
+  input:-webkit-autofill,
+  input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--text) !important;
+    -webkit-box-shadow: 0 0 0px 1000px var(--input-bg) inset !important;
+    transition: background-color 5000s;
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<button class="theme-btn" id="themeBtn" title="Alternar Tema">🌓</button>
+
+<div class="login-wrap">
+  <div class="login-card">
+
+    <div class="logo-wrap">
+      <div class="logo-icon">⚙</div>
+      <div class="logo-name">SOMA</div>
+      <div class="logo-sub">Inteligência em Cronoanálise</div>
+    </div>
+
+    <div class="role-badge" id="roleBadge">
+      <div class="role-dot" id="roleDot"></div>
+      <span id="roleLabel">Detectando perfil...</span>
+    </div>
+
+    <div class="error-box" id="errorBox">E-mail ou senha incorretos. Verifique suas credenciais.</div>
+
+    <div>
+      <div class="input-wrap">
+        <label class="form-label">E-mail de Acesso</label>
+        <input
+          type="email" id="email" class="login-input"
+          placeholder="seu@email.com"
+          autocomplete="email"
+        >
+        <span class="input-icon">✉️</span>
+      </div>
+
+      <div class="input-wrap">
+        <label class="form-label">Senha</label>
+        <input
+          type="password" id="password" class="login-input"
+          placeholder="••••••••"
+          autocomplete="current-password"
+          onkeydown="if(event.key==='Enter') doLogin()"
+        >
+        <span class="input-icon" style="left:16px">🔒</span>
+        <button class="pass-toggle" id="passToggle" type="button" onclick="togglePass()">👁</button>
+      </div>
+
+      <button class="btn-login" id="loginBtn" onclick="doLogin()">
+        <span class="btn-text">Acessar Sistema</span>
+        <div class="spinner"></div>
+      </button>
+    </div>
+
+    <div class="login-footer">
+      SOMA v2.1 · <strong>TRAEL Modular</strong> · Acesso Restrito
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://ccytzaruxdbtqqblpciq.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_IowVi8PFf6gDSzjpC8EgQA_sFzzkvsv';
+const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Tema
+const savedTheme = localStorage.getItem('soma-theme');
+if (savedTheme === 'light') document.body.classList.add('light');
+
+document.getElementById('themeBtn').addEventListener('click', () => {
+  const isLight = document.body.classList.toggle('light');
+  localStorage.setItem('soma-theme', isLight ? 'light' : 'dark');
+  document.getElementById('themeBtn').textContent = isLight ? '🌙' : '🌓';
+});
+if (savedTheme === 'light') document.getElementById('themeBtn').textContent = '🌙';
+
+// Detectar perfil conforme digita o e-mail
+const ROLE_MAP = {
+  'admin.trael@trael.cto': { role: 'programador', label: '⚡ Programador', color: '#00f2c3', name: 'Luiz Silva' },
+  'admin.trael@trael.coo': { role: 'programador', label: '⚡ Programador', color: '#00f2c3', name: 'Erlan Redez' },
+  'admin.trael@trael.ceo': { role: 'programador', label: '⚡ Programador', color: '#00f2c3', name: 'Matheus Inhan' },
+  'gerencia@trael.com':    { role: 'coordenador',  label: '🎯 Coordenador',  color: '#4d94ff', name: 'Gerência Operacional' },
+  'soma@trael.com':        { role: 'alimentador',  label: '📋 Alimentador',  color: '#ffd700', name: 'Operacional de Campo' }
+};
+
+document.getElementById('email').addEventListener('input', function() {
+  const val = this.value.trim().toLowerCase();
+  const info = ROLE_MAP[val];
+  const badge = document.getElementById('roleBadge');
+  const dot   = document.getElementById('roleDot');
+  const lbl   = document.getElementById('roleLabel');
+  if (info) {
+    dot.style.background = info.color;
+    dot.style.boxShadow = `0 0 6px ${info.color}`;
+    badge.style.borderColor = info.color + '44';
+    badge.style.color = info.color;
+    badge.style.background = info.color + '14';
+    lbl.textContent = info.label;
+    badge.classList.add('show');
+  } else {
+    badge.classList.remove('show');
+  }
+});
+
+function togglePass() {
+  const inp = document.getElementById('password');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  document.getElementById('passToggle').textContent = inp.type === 'password' ? '👁' : '🙈';
+}
+
+function showError(msg) {
+  const b = document.getElementById('errorBox');
+  b.textContent = msg;
+  b.classList.add('show');
+  setTimeout(() => b.classList.remove('show'), 4000);
+}
+
+async function doLogin() {
+  const email    = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const btn      = document.getElementById('loginBtn');
+
+  if (!email || !password) { showError('Preencha e-mail e senha.'); return; }
+
+  btn.disabled = true;
+  btn.classList.add('loading');
+  document.getElementById('errorBox').classList.remove('show');
+
+  try {
+    const { data, error } = await _sb.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+
+    // Buscar perfil
+    const { data: profile } = await _sb.from('user_profiles').select('*').eq('id', data.user.id).single();
+    if (!profile) throw new Error('Perfil de acesso não configurado. Contate o administrador.');
+
+    // Salvar role na sessão para uso no app
+    localStorage.setItem('soma-role',  profile.role);
+    localStorage.setItem('soma-name',  profile.display_name);
+
+    window.location.href = 'index.html';
+  } catch (err) {
+    const msg = err.message?.includes('Invalid login') || err.message?.includes('invalid')
+      ? 'E-mail ou senha incorretos.'
+      : (err.message || 'Erro ao acessar. Tente novamente.');
+    showError(msg);
+    btn.disabled = false;
+    btn.classList.remove('loading');
+  }
+}
+
+// Verificar se já está logado
+(async () => {
+  const { data: { session } } = await _sb.auth.getSession();
+  if (session) window.location.href = 'index.html';
+})();
+</script>
+</body>
+</html>
