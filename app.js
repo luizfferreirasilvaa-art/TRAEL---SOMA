@@ -521,6 +521,18 @@ function fillParadaRow(el) {
   calcResumo();
 }
 
+function addObsRow() {
+  const tbody = document.getElementById('obs-body');
+  if (!tbody) return;
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input type="text" placeholder="Título (Ex: Atraso, Destaque...)" class="obs-titulo" style="width:100%;"></td>
+    <td><input type="text" placeholder="Descrição detalhada da observação" class="obs-desc" style="width:100%;"></td>
+    <td><button class="btn-del" onclick="this.parentElement.parentElement.remove();">×</button></td>
+  `;
+  tbody.appendChild(tr);
+}
+
 function calcResumo() {
   // Cálculo de produção
   let totalQtd = 0;
@@ -583,8 +595,9 @@ async function saveRegisto() {
 
   const pecaRows = document.querySelectorAll('#pecas-body tr');
   const paradaRows = document.querySelectorAll('#paradas-body tr');
+  const obsRows = document.querySelectorAll('#obs-body tr');
 
-  if (pecaRows.length === 0 && paradaRows.length === 0) {
+  if (pecaRows.length === 0 && paradaRows.length === 0 && obsRows.length === 0) {
     showToast('Adicione ao menos um registro!', 'err');
     return;
   }
@@ -652,6 +665,20 @@ async function saveRegisto() {
     });
   });
 
+  // Linhas de observação
+  obsRows.forEach(tr => {
+    const titulo = tr.querySelector('.obs-titulo').value;
+    const desc = tr.querySelector('.obs-desc').value;
+    if (titulo || desc) {
+      records.push({
+        ...base,
+        cod_parada: titulo, // Reutilizando para título
+        desc_parada: desc,  // Reutilizando para descrição
+        tipo_registro: 'OBSERVACAO'
+      });
+    }
+  });
+
   const { error } = await sb.from('registros_cronoanalise').insert(records);
   if (error) {
     showToast('Erro ao salvar: ' + error.message, 'err');
@@ -670,6 +697,7 @@ async function saveRegisto() {
 function clearForm() {
   document.getElementById('pecas-body').innerHTML = '';
   document.getElementById('paradas-body').innerHTML = '';
+  document.getElementById('obs-body').innerHTML = '';
   document.getElementById('f-h-inicio').value = '';
   document.getElementById('f-h-fim').value = '';
   addPecaRow();
@@ -964,6 +992,27 @@ function renderParticular() {
         }).join('');
   }
 
+  // Renderizar Observações do Profissional
+  const obsBody = document.getElementById('part-obs-body');
+  const obsRecords = STATE.registros.filter(r => r.cod_oper === codOper && r.tipo_registro === 'OBSERVACAO');
+  
+  if (obsBody) {
+    if (obsRecords.length === 0) {
+      obsBody.innerHTML = '<em style="color:var(--muted);font-size:13px;">Nenhuma observação registrada para este profissional.</em>';
+    } else {
+      obsBody.innerHTML = obsRecords.map(o => `
+        <details class="obs-details" style="background:var(--surface); border:1px solid var(--border); padding:10px; border-radius:6px; margin-bottom:10px; cursor:pointer;">
+          <summary style="font-weight:600; font-size:14px; outline:none; color:var(--accent);">
+            📅 ${new Date(o.data).toLocaleDateString('pt-BR')} — ${o.cod_parada || 'Sem Título'}
+          </summary>
+          <div style="padding-top:10px; font-size:13px; color:var(--text); line-height:1.5;">
+            ${o.desc_parada || 'Sem descrição.'}
+          </div>
+        </details>
+      `).join('');
+    }
+  }
+
   // Gráfico de barras com linha de meta
   const ctx = document.getElementById('chart-particular');
   if (!ctx) return;
@@ -1052,6 +1101,7 @@ window.delRegistro = delRegistro;
 window.clearFilters = clearFilters;
 window.clearDashFilters = clearDashFilters;
 window.confirmClear = confirmClear;
+window.addObsRow = addObsRow;
 window.clearDB = clearDB;
 window.exportCSV = exportCSV;
 window.addConfig = addConfig;

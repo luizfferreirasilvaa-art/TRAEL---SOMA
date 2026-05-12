@@ -270,6 +270,25 @@
       </div>
 
       <div class="form-section">
+        <h3>📝 OBSERVAÇÕES DO OPERADOR</h3>
+        <div class="table-wrap">
+          <table class="paradas-table">
+            <thead>
+              <tr>
+                <th>Título da Observação</th>
+                <th>Descrição Detalhada</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="obs-body">
+              <!-- Linhas dinâmicas -->
+            </tbody>
+          </table>
+        </div>
+        <button id="btn-add-obs" class="btn btn-outline btn-sm mt-16" onclick="addObsRow()">+ Linha Observação</button>
+      </div>
+
+      <div class="form-section">
         <h3>📊 RESUMO DO TURNO</h3>
         <div class="grid-6 mt-16" style="background:var(--surface); padding:15px; border-radius:8px; border:1px solid var(--border);">
           <div class="res-item">
@@ -452,6 +471,11 @@
           <div class="card-title">DESEMPENHO POR PROJETO</div>
           <div style="height:300px; position:relative;">
             <canvas id="chart-particular"></canvas>
+          </div>
+        <div class="card mt-24">
+          <div class="card-title">OBSERVAÇÕES DO PROFISSIONAL</div>
+          <div id="part-obs-body">
+            <em style="color:var(--muted);font-size:13px;">Selecione um profissional para ver as observações.</em>
           </div>
         </div>
       </div>
