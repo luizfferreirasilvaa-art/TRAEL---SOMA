@@ -422,7 +422,7 @@ function showError(msg) {
 }
 
 async function doLogin() {
-  const email    = document.getElementById('email').value.trim();
+  const email    = document.getElementById('email').value.trim().toLowerCase();
   const password = document.getElementById('password').value;
   const btn      = document.getElementById('loginBtn');
 
@@ -436,17 +436,30 @@ async function doLogin() {
     const { data, error } = await _sb.auth.signInWithPassword({ email, password });
     if (error) throw error;
 
-    // Buscar perfil
+    // Tentar buscar perfil do Supabase
     const { data: profile } = await _sb.from('user_profiles').select('*').eq('id', data.user.id).single();
-    if (!profile) throw new Error('Perfil de acesso não configurado. Contate o administrador.');
 
-    // Salvar role na sessão para uso no app
-    localStorage.setItem('soma-role',  profile.role);
-    localStorage.setItem('soma-name',  profile.display_name);
+    if (profile) {
+      // Perfil configurado no banco — usa os dados reais
+      localStorage.setItem('soma-role', profile.role);
+      localStorage.setItem('soma-name', profile.display_name);
+    } else {
+      // Fallback: usar o ROLE_MAP local enquanto user_profiles não está configurado
+      const info = ROLE_MAP[email];
+      if (info) {
+        localStorage.setItem('soma-role', info.role);
+        localStorage.setItem('soma-name', info.name);
+      } else {
+        // Perfil desconhecido — acesso mínimo
+        localStorage.setItem('soma-role', 'alimentador');
+        localStorage.setItem('soma-name', data.user.email);
+      }
+    }
 
+    // Redireciona sempre que o login for bem-sucedido
     window.location.href = 'index.html';
   } catch (err) {
-    const msg = err.message?.includes('Invalid login') || err.message?.includes('invalid')
+    const msg = (err.message?.includes('Invalid login') || err.message?.includes('invalid') || err.message?.includes('credentials'))
       ? 'E-mail ou senha incorretos.'
       : (err.message || 'Erro ao acessar. Tente novamente.');
     showError(msg);
