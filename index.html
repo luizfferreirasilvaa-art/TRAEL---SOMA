@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SOMA - InteligÃªncia em CronoanÃ¡lise</title>
+<title>SOMA - Inteligência em Cronoanálise</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <!-- Supabase SDK -->
@@ -18,35 +18,35 @@
 <!-- SIDEBAR -->
 <div id="sidebar">
   <div class="logo">
-    <h1>âš™ SOMA</h1>
-    <p>INTELIGÃŠNCIA INDUSTRIAL</p>
+    <h1>⚙ SOMA</h1>
+    <p>INTELIGÊNCIA INDUSTRIAL</p>
   </div>
   <nav>
     <div class="nav-item active" onclick="setPage('dashboard')" id="nav-dashboard">
-      <span class="nav-icon">ðŸ“Š</span><span>Dashboard</span>
+      <span class="nav-icon">📊</span><span>Dashboard</span>
     </div>
     <div class="nav-item" onclick="setPage('digitador')" id="nav-digitador">
-      <span class="nav-icon">âœï¸</span><span>Digitador</span>
+      <span class="nav-icon">✏️</span><span>Digitador</span>
     </div>
     <div class="nav-item" onclick="setPage('banco')" id="nav-banco">
-      <span class="nav-icon">ðŸ—„ï¸</span><span>Base de dados de tempos</span>
+      <span class="nav-icon">🗄️</span><span>Base de dados de tempos</span>
     </div>
     <div class="nav-item" onclick="setPage('paradas')" id="nav-paradas">
-      <span class="nav-icon">ðŸ›‘</span><span>AnÃ¡lise Paradas</span>
+      <span class="nav-icon">🛑</span><span>Análise Paradas</span>
     </div>
     <div class="nav-item" onclick="setPage('particular')" id="nav-particular">
-      <span class="nav-icon">ðŸ‘¤</span><span>AnÃ¡lise Particular</span>
+      <span class="nav-icon">👤</span><span>Análise Particular</span>
     </div>
     <div class="nav-item" onclick="setPage('config')" id="nav-config">
-      <span class="nav-icon">âš™ï¸</span><span>ConfiguraÃ§Ãµes</span>
+      <span class="nav-icon">⚙️</span><span>Configurações</span>
     </div>
     <div class="nav-item" onclick="setPage('auditoria')" id="nav-auditoria" style="display:none;">
-      <span class="nav-icon">ðŸ“œ</span><span>Ãšltimas AlteraÃ§Ãµes</span>
+      <span class="nav-icon">📜</span><span>Últimas Alterações</span>
     </div>
   </nav>
   <div class="sidebar-footer">
-    <button class="btn btn-outline btn-sm" onclick="toggleTheme()" style="width:100%; margin-bottom:10px;">ðŸŒ“ Alternar Tema</button>
-    <span style="font-size:11px;color:var(--text-muted);">v2.2 Â· SOMA MODULAR</span>
+    <button class="btn btn-outline btn-sm" onclick="toggleTheme()" style="width:100%; margin-bottom:10px;">🌓 Alternar Tema</button>
+    <span style="font-size:11px;color:var(--text-muted);">v2.2 · SOMA MODULAR</span>
   </div>
 </div>
 
@@ -55,9 +55,9 @@
   <div class="topbar">
     <h2 id="page-title">Dashboard Operacional</h2>
     <div class="topbar-actions">
-      <button class="btn btn-outline btn-sm" style="display:none;">âš¡ Simular Dados</button>
-      <button class="btn btn-outline btn-sm" onclick="exportCSV()">â¬‡ Exportar CSV</button>
-      <button class="btn btn-danger btn-sm" style="display:none;">ðŸ—‘ Limpar Local</button>
+      <button class="btn btn-outline btn-sm" style="display:none;">⚡ Simular Dados</button>
+      <button class="btn btn-outline btn-sm" onclick="exportCSV()">⬇ Exportar CSV</button>
+      <button class="btn btn-danger btn-sm" style="display:none;">🗑 Limpar Local</button>
     </div>
   </div>
 
@@ -71,9 +71,9 @@
         </select>
         <select id="dash-filter-turno" onchange="renderAll()">
           <option value="">Todos Turnos</option>
-          <option value="D">D â€“ Diurno</option>
-          <option value="N">N â€“ Noturno</option>
-          <option value="M">M â€“ Misto</option>
+          <option value="D">D – Diurno</option>
+          <option value="N">N – Noturno</option>
+          <option value="M">M – Misto</option>
         </select>
         <select id="dash-filter-empresa" onchange="renderAll()">
           <option value="">Todas Empresas</option>
@@ -84,31 +84,31 @@
 
     <div class="grid-4 mb-24">
       <div class="card kpi accent">
-        <div class="card-title">EficiÃªncia Global</div>
+        <div class="card-title">Eficiência Global</div>
         <div class="val" id="kpi-efic-global">0%</div>
-        <div class="lbl">vs. Tempo PadrÃ£o</div>
+        <div class="lbl">vs. Tempo Padrão</div>
       </div>
       <div class="card kpi blue">
         <div class="card-title">Volume Total</div>
         <div class="val" id="kpi-qtd-total">0</div>
-        <div class="lbl">PeÃ§as Produzidas</div>
+        <div class="lbl">Peças Produzidas</div>
       </div>
       <div class="card kpi warn">
         <div class="card-title">Tempo Residual</div>
         <div class="val" id="kpi-residual">0h</div>
-        <div class="lbl">DesperdÃ­cio por Ciclo</div>
+        <div class="lbl">Desperdício por Ciclo</div>
       </div>
       <div class="card kpi danger">
         <div class="card-title">Gargalos</div>
         <div class="val" id="kpi-gargalos">0</div>
-        <div class="lbl">Alertas CrÃ­ticos</div>
+        <div class="lbl">Alertas Críticos</div>
       </div>
     </div>
 
     <div class="card mb-24">
       <div class="card-title">RESUMO EXECUTIVO</div>
       <div id="parecer-consultivo">
-        <em>Sincronizando registros de cronoanÃ¡lise...</em>
+        <em>Sincronizando registros de cronoanálise...</em>
       </div>
     </div>
 
@@ -120,9 +120,9 @@
             <thead>
               <tr>
                 <th>Elemento</th>
-                <th>T. MÃ©dio</th>
+                <th>T. Médio</th>
                 <th>T. Normal</th>
-                <th>T. PadrÃ£o</th>
+                <th>T. Padrão</th>
               </tr>
             </thead>
             <tbody id="table-comparativa">
@@ -134,15 +134,15 @@
       <div class="card">
         <div class="card-title">GANHOS E ALERTAS</div>
         <div id="ganhos-alertas" class="config-list">
-          <p style="color:var(--muted);font-size:13px;"><em>Sem observaÃ§Ãµes de campo no momento.</em></p>
+          <p style="color:var(--muted);font-size:13px;"><em>Sem observações de campo no momento.</em></p>
         </div>
       </div>
     </div>
 
     <div class="card mt-24">
-      <div class="card-title">PROJEÃ‡ÃƒO DE EFICIÃŠNCIA (ENTREGA ESTIMADA)</div>
+      <div class="card-title">PROJEÇÃO DE EFICIÊNCIA (ENTREGA ESTIMADA)</div>
       <div id="projecao-entrega" style="font-family:var(--font-mono); font-size:18px; color:var(--accent);">
-        -- peÃ§as para o restante do turno
+        -- peças para o restante do turno
       </div>
     </div>
   </div>
@@ -151,26 +151,26 @@
   <div class="page" id="page-digitador">
     <div class="card">
       <div class="form-section">
-        <h3>ðŸ“‹ IDENTIFICAÃ‡ÃƒO DO TURNO</h3>
+        <h3>📋 IDENTIFICAÇÃO DO TURNO</h3>
         <div class="form-grid">
           <div class="form-group">
             <label>Data</label>
             <input type="date" id="f-data" onchange="updateMonth()">
           </div>
           <div class="form-group">
-            <label>MÃªs</label>
+            <label>Mês</label>
             <input type="number" id="f-mes" readonly>
           </div>
           <div class="form-group">
-            <label>CÃ³d. Turno</label>
+            <label>Cód. Turno</label>
             <select id="f-turno">
-              <option value="D">D â€“ Diurno</option>
-              <option value="N">N â€“ Noturno</option>
-              <option value="M">M â€“ Misto</option>
+              <option value="D">D – Diurno</option>
+              <option value="N">N – Noturno</option>
+              <option value="M">M – Misto</option>
             </select>
           </div>
           <div class="form-group">
-            <label>CÃ³d. Operador</label>
+            <label>Cód. Operador</label>
             <select id="f-codoper" onchange="fillOper()">
               <option value="">Selecione</option>
             </select>
@@ -180,17 +180,17 @@
             <input type="text" id="f-descoper" readonly>
           </div>
           <div class="form-group">
-            <label>CÃ³d. MÃ¡quina</label>
+            <label>Cód. Máquina</label>
             <select id="f-codmaq" onchange="fillMaq()">
               <option value="">Selecione</option>
             </select>
           </div>
           <div class="form-group">
-            <label>Desc. MÃ¡quina</label>
+            <label>Desc. Máquina</label>
             <input type="text" id="f-descmaq" readonly>
           </div>
           <div class="form-group">
-            <label>Hora InÃ­cio</label>
+            <label>Hora Início</label>
             <input type="time" id="f-h-inicio" onchange="calcTurnHours()">
           </div>
           <div class="form-group">
@@ -198,7 +198,7 @@
             <input type="time" id="f-h-fim" onchange="calcTurnHours()">
           </div>
           <div class="form-group">
-            <label>Horas DisponÃ­veis</label>
+            <label>Horas Disponíveis</label>
             <input type="number" id="f-hdisp" step="0.01" value="9.8" oninput="calcResumo()">
           </div>
           <div class="form-group">
@@ -225,36 +225,36 @@
       </div>
 
       <div class="form-section">
-        <h3>âš¡ PRODUÃ‡ÃƒO (PEÃ‡AS)</h3>
+        <h3>⚡ PRODUÇÃO (PEÇAS)</h3>
         <div class="table-wrap">
           <table class="paradas-table">
             <thead>
               <tr>
-                <th>CÃ³d. PeÃ§a</th>
+                <th>Cód. Peça</th>
                 <th>Qtd. Produzida</th>
-                <th>PadrÃ£o PÃ§/H</th>
+                <th>Padrão Pç/H</th>
                 <th>Horas Produtivas</th>
                 <th>KWA Total</th>
-                <th>KWA MÃ©dio</th>
+                <th>KWA Médio</th>
                 <th>Classe Equip.</th>
                 <th></th>
               </tr>
             </thead>
             <tbody id="pecas-body">
-              <!-- Linhas dinÃ¢micas -->
+              <!-- Linhas dinâmicas -->
             </tbody>
           </table>
         </div>
-        <button id="btn-add-peca" class="btn btn-outline btn-sm mt-16" onclick="addPecaRow()">+ Linha PeÃ§a</button>
+        <button id="btn-add-peca" class="btn btn-outline btn-sm mt-16" onclick="addPecaRow()">+ Linha Peça</button>
       </div>
 
       <div class="form-section">
-        <h3>ðŸ›‘ PARADAS</h3>
+        <h3>🛑 PARADAS</h3>
         <div class="table-wrap">
           <table class="paradas-table">
             <thead>
               <tr>
-                <th>CÃ³d. Parada</th>
+                <th>Cód. Parada</th>
                 <th>Desc. Parada</th>
                 <th>Horas Paradas</th>
                 <th>Tipo</th>
@@ -262,7 +262,7 @@
               </tr>
             </thead>
             <tbody id="paradas-body">
-              <!-- Linhas dinÃ¢micas -->
+              <!-- Linhas dinâmicas -->
             </tbody>
           </table>
         </div>
@@ -270,26 +270,26 @@
       </div>
 
       <div class="form-section">
-        <h3>ðŸ“ OBSERVAÃ‡Ã•ES DO OPERADOR</h3>
+        <h3>📝 OBSERVAÇÕES DO OPERADOR</h3>
         <div class="table-wrap">
           <table class="paradas-table">
             <thead>
               <tr>
-                <th>TÃ­tulo da ObservaÃ§Ã£o</th>
-                <th>DescriÃ§Ã£o Detalhada</th>
+                <th>Título da Observação</th>
+                <th>Descrição Detalhada</th>
                 <th></th>
               </tr>
             </thead>
             <tbody id="obs-body">
-              <!-- Linhas dinÃ¢micas -->
+              <!-- Linhas dinâmicas -->
             </tbody>
           </table>
         </div>
-        <button id="btn-add-obs" class="btn btn-outline btn-sm mt-16" onclick="addObsRow()">+ Linha ObservaÃ§Ã£o</button>
+        <button id="btn-add-obs" class="btn btn-outline btn-sm mt-16" onclick="addObsRow()">+ Linha Observação</button>
       </div>
 
       <div class="form-section">
-        <h3>ðŸ“Š RESUMO DO TURNO</h3>
+        <h3>📊 RESUMO DO TURNO</h3>
         <div class="grid-6 mt-16" style="background:var(--surface); padding:15px; border-radius:8px; border:1px solid var(--border);">
           <div class="res-item">
             <div class="val" id="res-qtd">0</div>
@@ -309,18 +309,18 @@
           </div>
           <div class="res-item">
             <div class="val" id="res-efic" style="color:var(--accent)">0.0%</div>
-            <div class="lbl">EficiÃªncia</div>
+            <div class="lbl">Eficiência</div>
           </div>
           <div class="res-item">
             <div class="val" id="res-util" style="color:var(--accent3)">0.0%</div>
-            <div class="lbl">UtilizaÃ§Ã£o</div>
+            <div class="lbl">Utilização</div>
           </div>
         </div>
       </div>
 
       <div class="flex-end mt-24">
         <button class="btn btn-outline" onclick="clearForm()">Limpar</button>
-        <button id="btn-salvar-registro" class="btn btn-primary" onclick="saveRegisto()">ðŸ’¾ Salvar Registro</button>
+        <button id="btn-salvar-registro" class="btn btn-primary" onclick="saveRegisto()">💾 Salvar Registro</button>
       </div>
     </div>
   </div>
@@ -328,9 +328,9 @@
   <!-- BANCO DE DADOS (RULE 5) -->
   <div class="page" id="page-banco">
     <div class="card">
-      <div class="card-title">REGISTRO HISTÃ“RICO DE CRONOANÃLISE</div>
+      <div class="card-title">REGISTRO HISTÓRICO DE CRONOANÁLISE</div>
       <div class="grid-4 mb-16">
-        <input type="text" id="filter-peca" placeholder="Filtrar por PeÃ§a..." oninput="renderDatabase()">
+        <input type="text" id="filter-peca" placeholder="Filtrar por Peça..." oninput="renderDatabase()">
         <select id="filter-oper" onchange="renderDatabase()">
           <option value="">Todos Operadores</option>
         </select>
@@ -346,23 +346,23 @@
             <tr>
               <th>Data</th>
               <th>Operador</th>
-              <th>MÃ¡quina</th>
-              <th>PeÃ§a</th>
+              <th>Máquina</th>
+              <th>Peça</th>
               <th>Qtd</th>
-              <th>EficiÃªncia</th>
+              <th>Eficiência</th>
               <th>Status</th>
-              <th>AÃ§Ã£o</th>
+              <th>Ação</th>
             </tr>
           </thead>
           <tbody id="db-body">
-            <!-- Dados dinÃ¢micos -->
+            <!-- Dados dinâmicos -->
           </tbody>
         </table>
       </div>
     </div>
   </div>
 
-  <!-- ANÃLISE DE PARADAS (RULE 1.3) -->
+  <!-- ANÁLISE DE PARADAS (RULE 1.3) -->
   <div class="page" id="page-paradas">
     <div class="grid-2">
       <div class="card">
@@ -391,22 +391,22 @@
             </tr>
           </thead>
           <tbody id="paradas-detail-body">
-            <!-- Dados dinÃ¢micos -->
+            <!-- Dados dinâmicos -->
           </tbody>
         </table>
       </div>
     </div>
   </div>
 
-  <!-- ANÃLISE PARTICULAR -->
+  <!-- ANÁLISE PARTICULAR -->
   <div class="page" id="page-particular">
 
     <!-- Seletor de profissional -->
     <div class="card mb-24">
-      <div class="card-title">ðŸ‘¤ SELECIONAR PROFISSIONAL</div>
+      <div class="card-title">👤 SELECIONAR PROFISSIONAL</div>
       <div class="row" style="gap:12px; align-items:center;">
         <select id="particular-oper" onchange="renderParticular()" style="flex:1; max-width:420px;">
-          <option value="">â€” Selecione um operador â€”</option>
+          <option value="">— Selecione um operador —</option>
         </select>
         <span id="part-meta-badge" style="font-size:13px; color:var(--muted);"></span>
       </div>
@@ -414,37 +414,37 @@
 
     <!-- Estado vazio -->
     <div id="particular-empty" class="card" style="text-align:center; padding:60px 20px;">
-      <div style="font-size:52px; margin-bottom:16px;">ðŸ“Š</div>
-      <div style="color:var(--muted); font-size:14px;">Selecione um profissional para visualizar sua anÃ¡lise de desempenho individual.</div>
+      <div style="font-size:52px; margin-bottom:16px;">📊</div>
+      <div style="color:var(--muted); font-size:14px;">Selecione um profissional para visualizar sua análise de desempenho individual.</div>
     </div>
 
-    <!-- ConteÃºdo carregado -->
+    <!-- Conteúdo carregado -->
     <div id="particular-content" style="display:none;">
       <!-- KPIs -->
       <div class="grid-4 mb-24">
         <div class="card kpi blue">
           <div class="card-title">Horas Programadas</div>
           <div class="val" id="part-hprog">0h</div>
-          <div class="lbl">Total no PerÃ­odo</div>
+          <div class="lbl">Total no Período</div>
         </div>
         <div class="card kpi warn">
           <div class="card-title">Horas Trabalhadas</div>
           <div class="val" id="part-htrab">0h</div>
-          <div class="lbl">ProduÃ§Ã£o Real</div>
+          <div class="lbl">Produção Real</div>
         </div>
         <div class="card kpi accent">
-          <div class="card-title">Meta de EficiÃªncia</div>
+          <div class="card-title">Meta de Eficiência</div>
           <div class="val" id="part-meta">85%</div>
           <div class="lbl">Alvo do Profissional</div>
         </div>
         <div class="card kpi" id="part-efic-card">
-          <div class="card-title">EficiÃªncia AlcanÃ§ada</div>
+          <div class="card-title">Eficiência Alcançada</div>
           <div class="val" id="part-efic">0%</div>
           <div class="lbl">vs. Meta</div>
         </div>
       </div>
 
-      <!-- Projetos + GrÃ¡fico -->
+      <!-- Projetos + Gráfico -->
       <div class="grid-2 mb-24">
         <div class="card">
           <div class="card-title">PROJETOS DO PROFISSIONAL</div>
@@ -452,13 +452,13 @@
             <table class="paradas-table">
               <thead>
                 <tr>
-                  <th>Projeto / PeÃ§a</th>
+                  <th>Projeto / Peça</th>
                   <th>Qtd. Produzida</th>
                   <th>KWA Total</th>
-                  <th>KWA MÃ©dio</th>
+                  <th>KWA Médio</th>
                   <th>Classe Equip.</th>
-                  <th>MÃ¡quina</th>
-                  <th>EficiÃªncia</th>
+                  <th>Máquina</th>
+                  <th>Eficiência</th>
                 </tr>
               </thead>
               <tbody id="part-projects-body">
@@ -473,19 +473,19 @@
             <canvas id="chart-particular"></canvas>
           </div>
         <div class="card mt-24">
-          <div class="card-title">OBSERVAÃ‡Ã•ES DO PROFISSIONAL</div>
+          <div class="card-title">OBSERVAÇÕES DO PROFISSIONAL</div>
           <div id="part-obs-body">
-            <em style="color:var(--muted);font-size:13px;">Selecione um profissional para ver as observaÃ§Ãµes.</em>
+            <em style="color:var(--muted);font-size:13px;">Selecione um profissional para ver as observações.</em>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- CONFIGURAÃ‡Ã•ES (RULE 1.4) -->
+  <!-- CONFIGURAÇÕES (RULE 1.4) -->
   <div class="page" id="page-config">
 
-    <!-- Linha 1: Operadores + MÃ¡quinas (grid-2) -->
+    <!-- Linha 1: Operadores + Máquinas (grid-2) -->
     <div class="grid-2">
 
       <!-- OPERADORES -->
@@ -494,21 +494,21 @@
           <div class="card-title">OPERADORES</div>
           <div id="list-oper" class="config-list"></div>
           <div class="row mt-16" id="btn-add-oper">
-            <input type="text" id="new-oper-cod" placeholder="CÃ³d" style="width:60px;">
+            <input type="text" id="new-oper-cod" placeholder="Cód" style="width:60px;">
             <input type="text" id="new-oper-nome" placeholder="Nome Completo" style="flex:1;">
             <button class="btn btn-primary btn-sm" onclick="addConfig('oper')">+</button>
           </div>
         </div>
       </div>
 
-      <!-- MÃQUINAS -->
+      <!-- MÁQUINAS -->
       <div>
         <div class="card">
-          <div class="card-title">MÃQUINAS</div>
+          <div class="card-title">MÁQUINAS</div>
           <div id="list-maq" class="config-list"></div>
           <div class="row mt-16">
-            <input type="text" id="new-maq-cod" placeholder="CÃ³d" style="width:60px;">
-            <input type="text" id="new-maq-nome" placeholder="DescriÃ§Ã£o" style="flex:1;">
+            <input type="text" id="new-maq-cod" placeholder="Cód" style="width:60px;">
+            <input type="text" id="new-maq-nome" placeholder="Descrição" style="flex:1;">
             <button class="btn btn-primary btn-sm" onclick="addConfig('maq')">+</button>
           </div>
         </div>
@@ -521,11 +521,11 @@
       <div class="card-title">MOTIVOS DE PARADA</div>
       <div id="list-parada-motivos" class="config-list"></div>
       <div class="row mt-16">
-        <input type="text" id="new-par-cod" placeholder="CÃ³d" style="width:60px;">
-        <input type="text" id="new-par-desc" placeholder="DescriÃ§Ã£o do Motivo" style="flex:1;">
+        <input type="text" id="new-par-cod" placeholder="Cód" style="width:60px;">
+        <input type="text" id="new-par-desc" placeholder="Descrição do Motivo" style="flex:1;">
         <select id="new-par-tipo">
           <option value="PROG">PROG</option>
-          <option value="NÃƒO PROG">NÃƒO PROG</option>
+          <option value="NÃO PROG">NÃO PROG</option>
         </select>
         <button class="btn btn-primary btn-sm" onclick="addConfig('par')">+</button>
       </div>
@@ -537,8 +537,8 @@
         <div class="card-title">SETORES</div>
         <div id="list-setores" class="config-list"><em style="color:var(--muted);font-size:13px;">Carregando...</em></div>
         <div class="row mt-16" id="btn-add-set">
-          <input type="text" id="new-set-cod" placeholder="CÃ³d" style="width:60px;">
-          <input type="text" id="new-set-desc" placeholder="DescriÃ§Ã£o" style="flex:1;">
+          <input type="text" id="new-set-cod" placeholder="Cód" style="width:60px;">
+          <input type="text" id="new-set-desc" placeholder="Descrição" style="flex:1;">
           <input type="number" id="new-set-meta" placeholder="Meta %" style="width:75px;" min="0" max="100" step="1">
           <button class="btn btn-primary btn-sm" onclick="addConfig('set')">+</button>
         </div>
@@ -549,7 +549,7 @@
         <div class="card-title">EMPRESAS</div>
         <div id="list-empresas" class="config-list"><em style="color:var(--muted);font-size:13px;">Carregando...</em></div>
         <div class="row mt-16" id="btn-add-emp">
-          <input type="text" id="new-emp-cod" placeholder="CÃ³d" style="width:60px;">
+          <input type="text" id="new-emp-cod" placeholder="Cód" style="width:60px;">
           <input type="text" id="new-emp-desc" placeholder="Nome da Empresa" style="flex:1;">
           <button class="btn btn-primary btn-sm" onclick="addConfig('emp')">+</button>
         </div>
@@ -558,10 +558,10 @@
 
   </div><!-- /page-config -->
 
-  <!-- AUDITORIA (sÃ³ Programador) -->
+  <!-- AUDITORIA (só Programador) -->
   <div class="page" id="page-auditoria">
     <div class="card">
-      <div class="card-title">ðŸ“œ ÃšLTIMAS ALTERAÃ‡Ã•ES â€” AUDITORIA DO SISTEMA</div>
+      <div class="card-title">📜 ÚLTIMAS ALTERAÇÕES — AUDITORIA DO SISTEMA</div>
       <div class="table-wrap">
         <table class="paradas-table">
           <thead>
@@ -569,7 +569,7 @@
               <th>Data/Hora</th>
               <th>Operador</th>
               <th>Tipo</th>
-              <th>PeÃ§a / Motivo</th>
+              <th>Peça / Motivo</th>
               <th>Registrado por</th>
               <th>Perfil</th>
             </tr>
@@ -587,8 +587,8 @@
 <!-- MODAL confirm -->
 <div class="modal-bg" id="modal-clear">
   <div class="modal">
-    <h3>âš ï¸ Limpar Base de Dados?</h3>
-    <p style="color:var(--muted);font-size:13px;margin-top:8px;">Esta aÃ§Ã£o apagarÃ¡ TODOS os registros de produÃ§Ã£o permanentemente do Supabase. Deseja continuar?</p>
+    <h3>⚠️ Limpar Base de Dados?</h3>
+    <p style="color:var(--muted);font-size:13px;margin-top:8px;">Esta ação apagará TODOS os registros de produção permanentemente do Supabase. Deseja continuar?</p>
     <div class="flex-end mt-24">
       <button class="btn btn-outline" onclick="closeModal()">Cancelar</button>
       <button class="btn btn-danger" onclick="clearDB()">Confirmar Limpeza</button>
@@ -601,4 +601,5 @@
 <script src="app.js"></script>
 </body>
 </html>
-< ! - -   C a c h e   b u s t e r :   0 5 / 1 2 / 2 0 2 6   1 4 : 5 6 : 1 7   - - > 
+< ! - -   C a c h e   b u s t e r :   0 5 / 1 2 / 2 0 2 6   1 4 : 5 6 : 1 7   - - >  
+ 
