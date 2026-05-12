@@ -13,6 +13,7 @@ let STATE = {
   maquinas: [],
   paradas: [],
   setores: [],
+  empresas: [],
   registros: []
 };
 
@@ -38,17 +39,55 @@ window.onload = async () => {
 
 async function loadConfig() {
   try {
-    const { data: oper } = await sb.from('operadores').select('*');
-    const { data: maq } = await sb.from('maquinas').select('*');
-    const { data: par } = await sb.from('paradas_motivos').select('*');
-    const { data: set } = await sb.from('setores').select('*');
-    
-    STATE.operadores = oper || [];
-    STATE.maquinas = maq || [];
-    STATE.paradas = par || [];
-    STATE.setores = set || [];
-    
-    fillSelects();
+    const [
+      { data: opers },
+      { data: maqs },
+      { data: pars },
+      { data: sets },
+      { data: emps }
+    ] = await Promise.all([
+      sb.from('operadores').select('*').order('nome'),
+      sb.from('maquinas').select('*').order('nome'),
+      sb.from('paradas_motivos').select('*').order('descricao'),
+      sb.from('setores').select('*').order('descricao'),
+      sb.from('empresas').select('*').order('descricao')
+    ]);
+
+    STATE.operadores = opers || [];
+    STATE.maquinas = maqs || [];
+    STATE.paradas = pars || [];
+    STATE.setores = sets || [];
+    STATE.empresas = emps || [];
+
+    // Preencher Selects no Digitador
+    const fOper = document.getElementById('f-codoper');
+    if (fOper) fOper.innerHTML = '<option value="">Selecione</option>' + STATE.operadores.map(o => `<option value="${o.cod}">${o.cod} - ${o.nome}</option>`).join('');
+
+    const fMaq = document.getElementById('f-codmaq');
+    if (fMaq) fMaq.innerHTML = '<option value="">Selecione</option>' + STATE.maquinas.map(m => `<option value="${m.cod}">${m.cod} - ${m.nome}</option>`).join('');
+
+    const fSetor = document.getElementById('f-codsetor');
+    if (fSetor) fSetor.innerHTML = '<option value="">Selecione</option>' + STATE.setores.map(s => `<option value="${s.cod}">${s.cod} - ${s.descricao}</option>`).join('');
+
+    const fEmpresa = document.getElementById('f-empresa');
+    if (fEmpresa) fEmpresa.innerHTML = '<option value="">Selecione</option>' + STATE.empresas.map(e => `<option value="${e.cod}">${e.cod} - ${e.descricao}</option>`).join('');
+
+    // Preencher Selects de Filtro no Banco de Dados e Dashboard
+    const dbFilterOper = document.getElementById('filter-oper');
+    if (dbFilterOper) dbFilterOper.innerHTML = '<option value="">Todos Operadores</option>' + STATE.operadores.map(o => `<option value="${o.cod}">${o.nome}</option>`).join('');
+
+    const dbFilterSetor = document.getElementById('filter-setor');
+    if (dbFilterSetor) dbFilterSetor.innerHTML = '<option value="">Todos Setores</option>' + STATE.setores.map(s => `<option value="${s.cod}">${s.descricao}</option>`).join('');
+
+    const dashFilterSetor = document.getElementById('dash-filter-setor');
+    if (dashFilterSetor) dashFilterSetor.innerHTML = '<option value="">Todos Setores</option>' + STATE.setores.map(s => `<option value="${s.cod}">${s.descricao}</option>`).join('');
+
+    const dashFilterEmpresa = document.getElementById('dash-filter-empresa');
+    if (dashFilterEmpresa) dashFilterEmpresa.innerHTML = '<option value="">Todas Empresas</option>' + STATE.empresas.map(e => `<option value="${e.cod}">${e.descricao}</option>`).join('');
+
+    // Particular
+    const partOper = document.getElementById('particular-oper');
+    if (partOper) partOper.innerHTML = '<option value="">— Selecione um operador —</option>' + STATE.operadores.map(o => `<option value="${o.cod}">${o.nome}</option>`).join('');
   } catch (err) {
     showToast('Erro ao carregar configurações de campo', 'err');
   }
@@ -66,37 +105,7 @@ async function loadData() {
 }
 
 function fillSelects() {
-  const sOper = document.getElementById('f-codoper');
-  const sMaq = document.getElementById('f-codmaq');
-  const sSetor = document.getElementById('f-codsetor');
-  const fOper = document.getElementById('filter-oper');
-  const fSetor = document.getElementById('filter-setor');
-  const pOper = document.getElementById('particular-oper');
-  
-  if (sOper) {
-    sOper.innerHTML = '<option value="">Selecione</option>' + 
-      STATE.operadores.map(o => `<option value="${o.cod}">${o.cod} - ${o.nome}</option>`).join('');
-  }
-  if (sMaq) {
-    sMaq.innerHTML = '<option value="">Selecione</option>' + 
-      STATE.maquinas.map(m => `<option value="${m.cod}">${m.cod} - ${m.nome}</option>`).join('');
-  }
-  if (sSetor) {
-    sSetor.innerHTML = '<option value="">Selecione</option>' + 
-      STATE.setores.map(s => `<option value="${s.cod}">${s.cod} - ${s.descricao}</option>`).join('');
-  }
-  if (fOper) {
-    fOper.innerHTML = '<option value="">Todos Operadores</option>' + 
-      STATE.operadores.map(o => `<option value="${o.cod}">${o.nome}</option>`).join('');
-  }
-  if (fSetor) {
-    fSetor.innerHTML = '<option value="">Todos Setores</option>' + 
-      STATE.setores.map(s => `<option value="${s.cod}">${s.cod} - ${s.descricao}</option>`).join('');
-  }
-  if (pOper) {
-    pOper.innerHTML = '<option value="">— Selecione um operador —</option>' + 
-      STATE.operadores.map(o => `<option value="${o.cod}">${o.cod} - ${o.nome}${o.meta ? ' (Meta: ' + o.meta + '%)' : ''}</option>`).join('');
-  }
+  // Mantido para compatibilidade histórica, agora consolidado em loadConfig
 }
 
 // ───────── ALTERNÂNCIA DE TEMA ─────────
@@ -291,6 +300,7 @@ async function renderConfigTable() {
   const lMaq = document.getElementById('list-maq');
   const lPar = document.getElementById('list-parada-motivos');
   const lSet = document.getElementById('list-setores');
+  const lEmp = document.getElementById('list-empresas');
 
   if (lOper) {
     lOper.innerHTML = STATE.operadores.map(o => `
@@ -326,6 +336,16 @@ async function renderConfigTable() {
       </div>
     `).join('');
   }
+  if (lEmp) {
+    lEmp.innerHTML = STATE.empresas.length === 0
+      ? '<p style="color:var(--muted);font-size:13px;"><em>Nenhuma empresa cadastrada.</em></p>'
+      : STATE.empresas.map(e => `
+      <div class="config-row">
+        <span><strong>${e.cod}</strong> - ${e.descricao}</span>
+        <button class="btn-del" onclick="removeConfig('empresas', '${e.id}')">×</button>
+      </div>
+    `).join('');
+  }
 }
 
 async function addConfig(type) {
@@ -351,9 +371,15 @@ async function addConfig(type) {
   } else if (type === 'set') {
     table = 'setores';
     payload = {
-      cod: document.getElementById('new-set-cod').value.toUpperCase(),
+      cod: document.getElementById('new-set-cod').value,
       descricao: document.getElementById('new-set-desc').value.toUpperCase(),
       meta: parseFloat(document.getElementById('new-set-meta').value) || null
+    };
+  } else if (type === 'emp') {
+    table = 'empresas';
+    payload = {
+      cod: document.getElementById('new-emp-cod').value,
+      descricao: document.getElementById('new-emp-desc').value.toUpperCase()
     };
   }
 
@@ -375,6 +401,7 @@ async function addConfig(type) {
     if (type === 'maq') { document.getElementById('new-maq-cod').value=''; document.getElementById('new-maq-nome').value=''; }
     if (type === 'par') { document.getElementById('new-par-cod').value=''; document.getElementById('new-par-desc').value=''; }
     if (type === 'set') { document.getElementById('new-set-cod').value=''; document.getElementById('new-set-desc').value=''; document.getElementById('new-set-meta').value=''; }
+    if (type === 'emp') { document.getElementById('new-emp-cod').value=''; document.getElementById('new-emp-desc').value=''; }
   }
 }
 
@@ -539,6 +566,8 @@ async function saveRegisto() {
   const descMaq = document.getElementById('f-descmaq').value;
   const codSetor = document.getElementById('f-codsetor').value;
   const descSetor = STATE.setores.find(s => s.cod === codSetor)?.descricao || '';
+  const codEmpresa = document.getElementById('f-empresa').value;
+  const descEmpresa = STATE.empresas.find(e => e.cod === codEmpresa)?.descricao || '';
   const hInicio = document.getElementById('f-h-inicio').value;
   const hFim = document.getElementById('f-h-fim').value;
   const hDisp = document.getElementById('f-hdisp').value;
@@ -574,6 +603,8 @@ async function saveRegisto() {
     desc_maq: descMaq,
     cod_setor: codSetor || null,
     desc_setor: descSetor || null,
+    cod_empresa: codEmpresa || null,
+    desc_empresa: descEmpresa || null,
     h_inicio: hInicio || null,
     h_fim: hFim || null,
     h_disponivel: parseFloat(hDisp) || 0,
@@ -642,22 +673,47 @@ function clearForm() {
   calcResumo();
 }
 
+function clearDashFilters() {
+  const fSetor = document.getElementById('dash-filter-setor');
+  if (fSetor) fSetor.value = '';
+  const fTurno = document.getElementById('dash-filter-turno');
+  if (fTurno) fTurno.value = '';
+  const fEmpresa = document.getElementById('dash-filter-empresa');
+  if (fEmpresa) fEmpresa.value = '';
+  renderAll();
+}
+
+// ───────── DASHBOARD (REGRA 4) ─────────
 function renderAll() {
-  if (STATE.registros.length === 0) {
+  const dsSetor = document.getElementById('dash-filter-setor')?.value;
+  const dsTurno = document.getElementById('dash-filter-turno')?.value;
+  const dsEmpresa = document.getElementById('dash-filter-empresa')?.value;
+
+  // Filtragem dos registros baseada na barra do Dashboard
+  let filteredRecords = STATE.registros;
+  if (dsSetor) filteredRecords = filteredRecords.filter(r => r.cod_setor === dsSetor);
+  if (dsTurno) filteredRecords = filteredRecords.filter(r => r.turno === dsTurno);
+  if (dsEmpresa) filteredRecords = filteredRecords.filter(r => r.cod_empresa === dsEmpresa);
+
+  if (filteredRecords.length === 0) {
     document.getElementById('kpi-efic-global').textContent = '0%';
     document.getElementById('kpi-qtd-total').textContent = '0';
     document.getElementById('kpi-residual').textContent = '0h';
     document.getElementById('kpi-gargalos').textContent = '0';
-    document.getElementById('parecer-consultivo').innerHTML = '<em>Aguardando registros...</em>';
+    document.getElementById('parecer-consultivo').innerHTML = '<em>Nenhum registro encontrado com os filtros aplicados.</em>';
     return;
   }
 
-  const totalProduced = STATE.registros.reduce((sum, r) => sum + (r.qtd || 0), 0);
-  const totalHDisp = STATE.registros.reduce((max, r) => Math.max(max, r.h_disponivel || 0), 0) || 8.8;
-  const totalHProd = STATE.registros.reduce((sum, r) => sum + (r.h_produtiva || 0), 0);
+  const pecas = filteredRecords.filter(r => r.tipo_registro === 'PRODUCAO');
+  const paradas = filteredRecords.filter(r => r.tipo_registro === 'PARADA');
+
+  // Cálculo KPI
+  const totalProduced = pecas.reduce((sum, p) => sum + (parseFloat(p.qtd) || 0), 0);
+  const totalHProd = pecas.reduce((sum, p) => sum + (parseFloat(p.h_produtiva) || 0), 0);
+  const totalHDisp = filteredRecords.reduce((max, r) => Math.max(max, r.h_disponivel || 0), 0) || 8.8;
   const residual = Math.max(0, totalHDisp - totalHProd);
   
-  const recordsWithPattern = STATE.registros.filter(r => r.tp_padrao > 0);
+  const recordsWithPattern = pecas.filter(r => r.tp_padrao > 0);
   const avgEfic = recordsWithPattern.length > 0 ? 
     recordsWithPattern.reduce((sum, r) => sum + (r.eficiencia || 0), 0) / recordsWithPattern.length : 0;
   
@@ -991,6 +1047,7 @@ async function renderAuditoria() {
 window.simulateData = simulateData;
 window.delRegistro = delRegistro;
 window.clearFilters = clearFilters;
+window.clearDashFilters = clearDashFilters;
 window.confirmClear = confirmClear;
 window.clearDB = clearDB;
 window.exportCSV = exportCSV;

@@ -63,6 +63,25 @@
 
   <!-- DASHBOARD (RULE 4) -->
   <div class="page active" id="page-dashboard">
+    <!-- FILTROS DO DASHBOARD -->
+    <div class="card mb-24" style="padding: 16px 28px;">
+      <div class="grid-4" style="gap: 16px; align-items: center;">
+        <select id="dash-filter-setor" onchange="renderAll()">
+          <option value="">Todos Setores</option>
+        </select>
+        <select id="dash-filter-turno" onchange="renderAll()">
+          <option value="">Todos Turnos</option>
+          <option value="D">D – Diurno</option>
+          <option value="N">N – Noturno</option>
+          <option value="M">M – Misto</option>
+        </select>
+        <select id="dash-filter-empresa" onchange="renderAll()">
+          <option value="">Todas Empresas</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="clearDashFilters()">Limpar Filtros</button>
+      </div>
+    </div>
+
     <div class="grid-4 mb-24">
       <div class="card kpi accent">
         <div class="card-title">Eficiência Global</div>
@@ -195,6 +214,12 @@
           <div class="form-group">
             <label>Desc. Setor</label>
             <input type="text" id="f-descsetor" readonly>
+          </div>
+          <div class="form-group">
+            <label>Empresa</label>
+            <select id="f-empresa">
+              <option value="">Selecione</option>
+            </select>
           </div>
         </div>
       </div>
@@ -482,15 +507,28 @@
       </div>
     </div>
 
-    <!-- SETORES -->
-    <div class="card mt-24" id="config-setores-section">
-      <div class="card-title">SETORES</div>
-      <div id="list-setores" class="config-list"><em style="color:var(--muted);font-size:13px;">Carregando...</em></div>
-      <div class="row mt-16" id="btn-add-set">
-        <input type="text" id="new-set-cod" placeholder="Cód" style="width:60px;">
-        <input type="text" id="new-set-desc" placeholder="Descrição do Setor" style="flex:1;">
-        <input type="number" id="new-set-meta" placeholder="Meta %" style="width:75px;" min="0" max="100" step="1">
-        <button class="btn btn-primary btn-sm" onclick="addConfig('set')">+</button>
+    <div class="grid-2 mt-24">
+      <!-- SETORES -->
+      <div class="card" id="config-setores-section">
+        <div class="card-title">SETORES</div>
+        <div id="list-setores" class="config-list"><em style="color:var(--muted);font-size:13px;">Carregando...</em></div>
+        <div class="row mt-16" id="btn-add-set">
+          <input type="text" id="new-set-cod" placeholder="Cód" style="width:60px;">
+          <input type="text" id="new-set-desc" placeholder="Descrição" style="flex:1;">
+          <input type="number" id="new-set-meta" placeholder="Meta %" style="width:75px;" min="0" max="100" step="1">
+          <button class="btn btn-primary btn-sm" onclick="addConfig('set')">+</button>
+        </div>
+      </div>
+
+      <!-- EMPRESAS -->
+      <div class="card" id="config-empresas-section">
+        <div class="card-title">EMPRESAS</div>
+        <div id="list-empresas" class="config-list"><em style="color:var(--muted);font-size:13px;">Carregando...</em></div>
+        <div class="row mt-16" id="btn-add-emp">
+          <input type="text" id="new-emp-cod" placeholder="Cód" style="width:60px;">
+          <input type="text" id="new-emp-desc" placeholder="Nome da Empresa" style="flex:1;">
+          <button class="btn btn-primary btn-sm" onclick="addConfig('emp')">+</button>
+        </div>
       </div>
     </div>
 
