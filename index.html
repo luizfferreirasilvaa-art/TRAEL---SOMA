@@ -434,33 +434,40 @@
   </div>
 
   <!-- CONFIGURAÇÕES (RULE 1.4) -->
-
   <div class="page" id="page-config">
-    <!-- OPERADORES -->
-    <div id="config-operadores-section">
-      <div class="card">
-        <div class="card-title">OPERADORES</div>
-        <div id="list-oper" class="config-list"></div>
-        <div class="row mt-16" id="btn-add-oper">
-          <input type="text" id="new-oper-cod" placeholder="Cód" style="width:60px;">
-          <input type="text" id="new-oper-nome" placeholder="Nome Completo" style="flex:1;">
-          <button class="btn btn-primary btn-sm" onclick="addConfig('oper')">+</button>
+
+    <!-- Linha 1: Operadores + Máquinas (grid-2) -->
+    <div class="grid-2">
+
+      <!-- OPERADORES -->
+      <div id="config-operadores-section">
+        <div class="card">
+          <div class="card-title">OPERADORES</div>
+          <div id="list-oper" class="config-list"></div>
+          <div class="row mt-16" id="btn-add-oper">
+            <input type="text" id="new-oper-cod" placeholder="Cód" style="width:60px;">
+            <input type="text" id="new-oper-nome" placeholder="Nome Completo" style="flex:1;">
+            <button class="btn btn-primary btn-sm" onclick="addConfig('oper')">+</button>
+          </div>
         </div>
       </div>
-    </div>
-    <!-- MAQUINAS -->
-    <div>
-      <div class="card">
-        <div class="card-title">MÁQUINAS</div>
-        <div id="list-maq" class="config-list"></div>
-        <div class="row mt-16">
-          <input type="text" id="new-maq-cod" placeholder="Cód" style="width:60px;">
-          <input type="text" id="new-maq-nome" placeholder="Descrição" style="flex:1;">
-          <button class="btn btn-primary btn-sm" onclick="addConfig('maq')">+</button>
+
+      <!-- MÁQUINAS -->
+      <div>
+        <div class="card">
+          <div class="card-title">MÁQUINAS</div>
+          <div id="list-maq" class="config-list"></div>
+          <div class="row mt-16">
+            <input type="text" id="new-maq-cod" placeholder="Cód" style="width:60px;">
+            <input type="text" id="new-maq-nome" placeholder="Descrição" style="flex:1;">
+            <button class="btn btn-primary btn-sm" onclick="addConfig('maq')">+</button>
+          </div>
         </div>
       </div>
-    </div>
-  </div>
+
+    </div><!-- /grid-2 -->
+
+    <!-- MOTIVOS DE PARADA -->
     <div class="card mt-24">
       <div class="card-title">MOTIVOS DE PARADA</div>
       <div id="list-parada-motivos" class="config-list"></div>
@@ -474,6 +481,8 @@
         <button class="btn btn-primary btn-sm" onclick="addConfig('par')">+</button>
       </div>
     </div>
+
+    <!-- SETORES -->
     <div class="card mt-24" id="config-setores-section">
       <div class="card-title">SETORES</div>
       <div id="list-setores" class="config-list"><em style="color:var(--muted);font-size:13px;">Carregando...</em></div>
@@ -484,12 +493,13 @@
         <button class="btn btn-primary btn-sm" onclick="addConfig('set')">+</button>
       </div>
     </div>
-  </div>
+
+  </div><!-- /page-config -->
 
   <!-- AUDITORIA (só Programador) -->
   <div class="page" id="page-auditoria">
     <div class="card">
-      <div class="card-title">📜 ÚCLIMAS ALTERAÇÕES — AUDITORIA DO SISTEMA</div>
+      <div class="card-title">📜 ÚLTIMAS ALTERAÇÕES — AUDITORIA DO SISTEMA</div>
       <div class="table-wrap">
         <table class="paradas-table">
           <thead>
