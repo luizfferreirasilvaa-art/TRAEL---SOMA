@@ -85,11 +85,7 @@ const AUTH = {
 
     // ── COORDENADOR ──────────────────────────────────────────────
     if (this.isCoordenador()) {
-      // Leitura: Digitador — ocultar botão Salvar e linhas de ação
-      _hideEl('btn-salvar-registro');
-      _hideEl('btn-add-peca');
-      _hideEl('btn-add-parada');
-      // Configurações: pode tudo — não ocultar
+      // Coordenador tem acesso total ao Digitador e Configurações
       return;
     }
 
