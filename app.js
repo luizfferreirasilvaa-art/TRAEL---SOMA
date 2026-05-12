@@ -181,13 +181,19 @@ function getStatusClass(efic) {
 
 async function delRegistro(id) {
   if (!confirm('Excluir este registro permanentemente?')) return;
-  const { error } = await sb.from('registros_cronoanalise').delete().eq('id', id);
-  if (!error) {
-    showToast('Registro excluído!');
-    await loadData();
-    renderAll();
-    renderDatabase();
+  const { error, count } = await sb.from('registros_cronoanalise').delete({ count: 'exact' }).eq('id', id);
+  if (error) {
+    showToast('Erro ao excluir: ' + error.message, 'error');
+    return;
   }
+  if (count === 0) {
+    showToast('Permissão negada ou registro não encontrado.', 'error');
+    return;
+  }
+  showToast('Registro excluído!', 'ok');
+  await loadData();
+  renderAll();
+  renderDatabase();
 }
 
 function clearFilters() {
