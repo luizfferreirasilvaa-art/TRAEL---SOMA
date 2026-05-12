@@ -407,11 +407,14 @@ async function addConfig(type) {
 
 async function removeConfig(table, id) {
   if (!confirm('Deseja realmente remover esta configuração?')) return;
-  const { error } = await sb.from(table).delete().eq('id', id);
+  const { error, count } = await sb.from(table).delete({ count: 'exact' }).eq('id', id);
+  
   if (error) {
-    showToast('Erro ao remover registro', 'err');
+    showToast('Erro ao remover configuração', 'err');
+  } else if (count === 0) {
+    showToast('Permissão negada ou configuração não encontrada.', 'err');
   } else {
-    showToast('Registro removido!', 'ok');
+    showToast('Configuração removida!', 'ok');
     await loadConfig();
     renderConfigTable();
   }
