@@ -1099,30 +1099,40 @@ function renderAll() {
   // Cálculo KPI
   const totalProduced = pecas.reduce((sum, p) => sum + (parseFloat(p.qtd) || 0), 0);
   const totalHProd = pecas.reduce((sum, p) => sum + (parseFloat(p.h_produtiva) || 0), 0);
-  const totalHDisp = filteredRecords.reduce((max, r) => Math.max(max, r.h_disponivel || 0), 0) || 8.8;
-  const residual = Math.max(0, totalHDisp - totalHProd);
+  
+  // Cálculo de Horas Totais (Programadas e Paradas) por turno único no dashboard (REGRA: H. Trabalhadas = H. Prog - Paradas)
+  const shiftKeys = [...new Set(filteredRecords.map(r => `${r.data}_${r.turno}_${r.cod_oper}`))];
+  let dashHProg = 0;
+  let dashHPar = 0;
+  shiftKeys.forEach(key => {
+    const sRecs = filteredRecords.filter(r => `${r.data}_${r.turno}_${r.cod_oper}` === key);
+    dashHProg += sRecs[0]?.h_programada || 0;
+    dashHPar += sRecs.filter(r => r.tipo_registro === 'PARADA').reduce((s, r) => s + (r.h_parada || 0), 0);
+  });
 
-  const recordsWithPattern = pecas.filter(r => r.tp_padrao > 0);
-  const avgEfic = recordsWithPattern.length > 0 ?
-    recordsWithPattern.reduce((sum, r) => sum + (r.eficiencia || 0), 0) / recordsWithPattern.length : 0;
+  const dashHTrab = Math.max(0, dashHProg - dashHPar);
+  const residual = Math.max(0, dashHTrab - totalHProd);
 
-  document.getElementById('kpi-efic-global').textContent = avgEfic.toFixed(1) + '%';
+  // Eficiência Global (REGRA 1.1: Tempo Padrão vs Tempo Real Líquido)
+  const globalEfic = dashHTrab > 0 ? (totalHProd / dashHTrab) * 100 : 0;
+
+  document.getElementById('kpi-efic-global').textContent = globalEfic.toFixed(1) + '%';
   document.getElementById('kpi-qtd-total').textContent = totalProduced;
   document.getElementById('kpi-residual').textContent = residual.toFixed(2) + 'h';
 
-  const gargalosCount = STATE.registros.filter(r => r.tipo_registro === 'PRODUCAO' && (r.eficiencia || 0) < 80).length;
+  const gargalosCount = pecas.filter(r => (r.eficiencia || 0) < 80).length;
   document.getElementById('kpi-gargalos').textContent = gargalosCount;
 
   // Regra 4: Resumo Executivo
   const parecer = document.getElementById('parecer-consultivo');
-  const worst = [...STATE.registros].filter(r => r.tp_padrao > 0).sort((a, b) => a.eficiencia - b.eficiencia)[0];
+  const worst = [...pecas].filter(r => r.tp_padrao > 0).sort((a, b) => a.eficiencia - b.eficiencia)[0];
 
   if (worst) {
-    const status = avgEfic >= 95 ? '[DENTRO DO PADRÃO]' : (avgEfic >= 80 ? '[DESVIO MODERADO]' : '[GARGALO CRÍTICO]');
-    const color = avgEfic >= 95 ? 'var(--success)' : (avgEfic >= 80 ? 'var(--warn)' : 'var(--danger)');
+    const status = globalEfic >= 95 ? '[DENTRO DO PADRÃO]' : (globalEfic >= 80 ? '[DESVIO MODERADO]' : '[GARGALO CRÍTICO]');
+    const color = globalEfic >= 95 ? 'var(--success)' : (globalEfic >= 80 ? 'var(--warn)' : 'var(--danger)');
 
     parecer.innerHTML = `
-      <p style="font-weight:600; color:${color}; margin-bottom:12px;">${status} - Saúde do processo operacional em ${(avgEfic).toFixed(1)}% de eficiência.</p>
+      <p style="font-weight:600; color:${color}; margin-bottom:12px;">${status} - Saúde do processo operacional em ${(globalEfic).toFixed(1)}% de eficiência.</p>
       <div style="font-size:13px; border-left:3px solid ${color}; padding-left:12px;">
         <strong>Desvio Identificado:</strong> Peça <em>${worst.cod_peca}</em> com performance de ${worst.eficiencia.toFixed(1)}%.<br>
         <strong>Causa Provável:</strong> ${worst.eficiencia < 80 ? 'Fadiga excessiva ou gargalo de método.' : 'Ritmo abaixo da média.'}<br>
@@ -1286,34 +1296,44 @@ function renderParticular() {
   if (empty) empty.style.display = 'none';
 
   const operData = STATE.operadores.find(o => o.cod === codOper);
-  const records = STATE.registros.filter(r => r.cod_oper === codOper && r.tipo_registro === 'PRODUCAO');
+  const allOperRecords = STATE.registros.filter(r => r.cod_oper === codOper);
+  const prodRecords = allOperRecords.filter(r => r.tipo_registro === 'PRODUCAO');
 
-  // Meta vem do setor do operador — usa o setor do primeiro registro encontrado
-  const codSetor = records.length > 0 ? records[0].cod_setor : null;
+  // H. Programadas e Paradas — soma única por turno/dia (REGRA: Horas Trabalhadas = H. Prog - Paradas)
+  const turnosKeys = [...new Set(allOperRecords.map(r => `${r.data}_${r.turno}`))];
+  let totalHProg = 0;
+  let totalHPar = 0;
+
+  turnosKeys.forEach(key => {
+    const shiftRecords = allOperRecords.filter(r => `${r.data}_${r.turno}` === key);
+    if (shiftRecords.length > 0) {
+      totalHProg += shiftRecords[0].h_programada || 0;
+      totalHPar += shiftRecords
+        .filter(r => r.tipo_registro === 'PARADA')
+        .reduce((sum, r) => sum + (r.h_parada || 0), 0);
+    }
+  });
+
+  const totalHTrab = Math.max(0, totalHProg - totalHPar);
+  const totalHProd = prodRecords.reduce((s, r) => s + (r.h_produtiva || 0), 0);
+  
+  // Meta vem do setor do operador
+  const codSetor = prodRecords.length > 0 ? prodRecords[0].cod_setor : null;
   const setorData = codSetor ? STATE.setores.find(s => s.cod === codSetor) : null;
   const meta = parseFloat(setorData?.meta) || 85;
 
-  // H. Programadas — soma única por turno/dia
-  const turnos = new Set(records.map(r => `${r.data}_${r.turno}`));
-  let totalHProg = 0;
-  turnos.forEach(key => {
-    const rec = records.find(r => `${r.data}_${r.turno}` === key);
-    totalHProg += rec?.h_programada || 0;
-  });
-
-  const totalHTrab = records.reduce((s, r) => s + (r.h_produtiva || 0), 0);
-  const avgEfic = records.length > 0
-    ? records.reduce((s, r) => s + (r.eficiencia || 0), 0) / records.length : 0;
+  // Eficiência Global do Operador: (Tempo Padrão Produzido / Tempo Líquido Disponível)
+  const globalEfic = totalHTrab > 0 ? (totalHProd / totalHTrab) * 100 : 0;
 
   document.getElementById('part-hprog').textContent = totalHProg.toFixed(2) + 'h';
   document.getElementById('part-htrab').textContent = totalHTrab.toFixed(4) + 'h';
   document.getElementById('part-meta').textContent = meta + '%';
-  document.getElementById('part-efic').textContent = avgEfic.toFixed(1) + '%';
+  document.getElementById('part-efic').textContent = globalEfic.toFixed(1) + '%';
 
   const eficCard = document.getElementById('part-efic-card');
   if (eficCard) {
     eficCard.className = 'card kpi ' +
-      (avgEfic >= meta ? 'accent' : avgEfic >= meta * 0.85 ? 'warn' : 'danger');
+      (globalEfic >= meta ? 'accent' : globalEfic >= meta * 0.85 ? 'warn' : 'danger');
   }
 
   const badge = document.getElementById('part-meta-badge');
@@ -1321,7 +1341,7 @@ function renderParticular() {
 
   // Agrupamento por projeto (cod_peca)
   const pm = {};
-  records.forEach(r => {
+  prodRecords.forEach(r => {
     const k = r.cod_peca || 'N/A';
     if (!pm[k]) pm[k] = { cod_peca: k, qtd: 0, kwa: 0, efic_sum: 0, count: 0, classe: r.classe_equipamento || '-', maq: r.cod_maq || '-' };
     pm[k].qtd += r.qtd || 0;
