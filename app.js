@@ -184,25 +184,25 @@ function renderDatabase() {
 async function editRegistro(id) {
   const r = STATE.registros.find(x => x.id === id);
   if (!r) return;
-  const opt = prompt(\`O que deseja alterar em \${r.tipo_registro}?
+  const opt = prompt(`O que deseja alterar em ${r.tipo_registro}?
 1 - Código (Peça ou Parada)
 2 - Valor (Quantidade ou Horas)
-3 - Observação / Título da Parada\`, '1');
+3 - Observação / Título da Parada`, '1');
   
   if (!opt) return;
 
   let field, val;
   if (opt === '1') {
     field = r.tipo_registro === 'PRODUCAO' ? 'cod_peca' : 'cod_parada';
-    val = prompt(\`Novo código:\`, r[field]);
+    val = prompt(`Novo código:`, r[field]);
     if (val) val = val.toUpperCase();
   } else if (opt === '2') {
     field = r.tipo_registro === 'PRODUCAO' ? 'qtd' : 'h_parada';
-    val = prompt(\`Novo valor para \${field}:\`, r[field]);
+    val = prompt(`Novo valor para ${field}:`, r[field]);
     if (val !== null) val = parseFloat(val);
   } else if (opt === '3') {
     field = r.tipo_registro === 'PRODUCAO' ? 'classe_equipamento' : 'desc_parada';
-    val = prompt(\`Nova descrição / observação / classe:\`, r[field]);
+    val = prompt(`Nova descrição / observação / classe:`, r[field]);
   }
 
   if (field && val !== null && !isNaN(val) || (field && val !== null && isNaN(val))) {
@@ -413,7 +413,7 @@ async function renderConfigTable() {
 }
 
 async function editConfig(table, id, currentVal, fieldName) {
-  const newVal = prompt(\`Editar \${fieldName}:\`, currentVal);
+  const newVal = prompt(`Editar ${fieldName}:`, currentVal);
   if (newVal !== null && newVal.trim() !== '') {
     const payload = {};
     payload[fieldName] = newVal.toUpperCase();
