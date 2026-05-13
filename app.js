@@ -246,8 +246,8 @@ function renderDatabase() {
         <td>${r.qtd || 0}</td>
         <td>${r.tp_padrao || 0}</td>
         <td>${fmtHora(r.h_produtiva || 0)}</td>
-        <td>${r.h_inicio || '-'}</td>
-        <td>${r.h_fim || '-'}</td>
+        <td>${(r.h_inicio || '-').substring(0, 5)}</td>
+        <td>${(r.h_fim || '-').substring(0, 5)}</td>
         <td>${fmtHora(hDisp)}</td>
         <td>${fmtHora(r.h_programada || 0)}</td>
         <td style="font-weight:bold; color:var(--accent)">${fmtHora(hTrab)}</td>
