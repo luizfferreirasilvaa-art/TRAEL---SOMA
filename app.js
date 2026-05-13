@@ -670,14 +670,15 @@ function closeConfigModal() {
 async function saveEditConfig() {
   const id = document.getElementById('edit-conf-id').value;
   const table = document.getElementById('edit-conf-table').value;
+  const cod = document.getElementById('edit-conf-cod').value.trim();
   const desc = document.getElementById('edit-conf-desc').value.trim();
 
-  if (!desc) {
-    showToast('A descrição não pode estar vazia!', 'err');
+  if (!cod || !desc) {
+    showToast('Código e descrição não podem estar vazios!', 'err');
     return;
   }
 
-  const payload = {};
+  const payload = { cod: cod.toUpperCase() };
   if (table === 'operadores' || table === 'maquinas') {
     payload.nome = desc.toUpperCase();
   } else {
