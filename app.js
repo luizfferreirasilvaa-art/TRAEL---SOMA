@@ -1130,14 +1130,27 @@ function renderAll() {
   });
 
   const dashHTrab = Math.max(0, dashHProg - dashHPar);
-  const residual = Math.max(0, dashHTrab - totalHProd);
+  const timeBalance = totalHProd - dashHTrab; // Positivo = Ganho, Negativo = Perda (Residual)
 
   // Eficiência Global (REGRA 1.1: Tempo Padrão vs Tempo Real Líquido)
   const globalEfic = dashHTrab > 0 ? (totalHProd / dashHTrab) * 100 : 0;
 
+  const resEl = document.getElementById('kpi-residual');
+  const resCard = resEl.parentElement;
+  const resLbl = resCard.querySelector('.lbl');
+
   document.getElementById('kpi-efic-global').textContent = globalEfic.toFixed(1) + '%';
   document.getElementById('kpi-qtd-total').textContent = totalProduced;
-  document.getElementById('kpi-residual').textContent = fmtHora(residual);
+  
+  if (timeBalance >= 0) {
+    resEl.textContent = "+" + fmtHora(timeBalance);
+    resCard.className = 'card kpi success';
+    resLbl.textContent = 'Ganho de Tempo (Sobrando)';
+  } else {
+    resEl.textContent = fmtHora(Math.abs(timeBalance));
+    resCard.className = 'card kpi danger';
+    resLbl.textContent = 'Tempo Residual (Perda)';
+  }
 
   const gargalosCount = pecas.filter(r => (r.eficiencia || 0) < 80).length;
   document.getElementById('kpi-gargalos').textContent = gargalosCount;
