@@ -210,24 +210,53 @@ function renderDatabase() {
     return;
   }
 
-  // Botão excluir/editar: visível apenas para programador e coordenador
   const canDelete = AUTH.isMinCoordenador();
 
-  list.innerHTML = filtered.map(r => `
-    <tr>
-      <td>${new Date(r.data).toLocaleDateString('pt-BR')}</td>
-      <td>${r.cod_oper}</td>
-      <td>${r.cod_maq}</td>
-      <td>${r.cod_peca || '-'}</td>
-      <td>${r.qtd || 0}</td>
-      <td>${r.tipo_registro === 'PRODUCAO' ? (r.eficiencia ? r.eficiencia.toFixed(1) + '%' : '-') : '-'}</td>
-      <td><span class="status-badge ${getStatusClass(r.eficiencia)}">${r.tipo_registro}</span></td>
-      <td>${canDelete ? `
-        <button class="btn-icon edit" onclick="editRegistro('${r.id}')" title="Editar">✏️</button>
-        <button class="btn-icon del" onclick="delRegistro('${r.id}')" title="Excluir">🗑️</button>
-      ` : '<span style="color:var(--text-muted);font-size:12px;">—</span>'}</td>
-    </tr>
-  `).join('');
+  // Pré-cálculo de Horas Trabalhadas (Líquidas) por Turno para o Banco de Dados
+  const shiftTotals = {};
+  filtered.forEach(r => {
+    const key = `${r.data}_${r.turno}_${r.cod_oper}`;
+    if (!shiftTotals[key]) {
+      const shiftRecords = STATE.registros.filter(x => `${x.data}_${x.turno}_${x.cod_oper}` === key);
+      const hProg = shiftRecords[0]?.h_programada || 0;
+      const hPar = shiftRecords.filter(x => x.tipo_registro === 'PARADA').reduce((s, x) => s + (x.h_parada || 0), 0);
+      shiftTotals[key] = Math.max(0, hProg - hPar);
+    }
+  });
+
+  list.innerHTML = filtered.map(r => {
+    const hTrab = shiftTotals[`${r.data}_${r.turno}_${r.cod_oper}`] || 0;
+    const hDisp = r.h_disponivel || 0; // Se houver no banco, usa, senão 0
+
+    return `
+      <tr>
+        <td style="white-space:nowrap;">${new Date(r.data).toLocaleDateString('pt-BR')}</td>
+        <td>${r.mes || '-'}</td>
+        <td>${r.turno || '-'}</td>
+        <td style="white-space:nowrap;">${r.cod_maq}</td>
+        <td style="white-space:nowrap;">${r.cod_oper}</td>
+        <td>${r.cod_peca || '-'}</td>
+        <td>${r.qtd || 0}</td>
+        <td>${r.tp_padrao || 0}</td>
+        <td>${fmtHora(r.h_produtiva || 0)}</td>
+        <td>${r.h_inicio || '-'}</td>
+        <td>${r.h_fim || '-'}</td>
+        <td>${fmtHora(hDisp)}</td>
+        <td>${fmtHora(r.h_programada || 0)}</td>
+        <td style="font-weight:bold; color:var(--accent)">${fmtHora(hTrab)}</td>
+        <td>${r.cod_parada || '-'}</td>
+        <td>${r.desc_parada || '-'}</td>
+        <td>${fmtHora(r.h_parada || 0)}</td>
+        <td><span class="status-badge ${r.tipo_parada === 'PROG' ? 'status-padrao' : 'status-gargalo'}">${r.tipo_parada || '-'}</span></td>
+        <td style="white-space:nowrap;">
+          ${canDelete ? `
+            <button class="btn-icon edit" onclick="editRegistro('${r.id}')" title="Editar">✏️</button>
+            <button class="btn-icon del" onclick="delRegistro('${r.id}')" title="Excluir">🗑️</button>
+          ` : '<span style="color:var(--text-muted);font-size:12px;">—</span>'}
+        </td>
+      </tr>
+    `;
+  }).join('');
 }
 
 // ───────── LÓGICA DO NOVO MODAL DE EDIÇÃO ─────────

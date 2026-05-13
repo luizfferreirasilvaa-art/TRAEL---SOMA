@@ -91,7 +91,7 @@
         <div class="card kpi accent">
           <div class="card-title">Eficiência Global</div>
           <div class="val" id="kpi-efic-global">0%</div>
-          <div class="lbl">vs. Tempo Padrão</div>
+          <div class="lbl">Fabricado x Programado</div>
         </div>
         <div class="card kpi blue">
           <div class="card-title">Volume Total</div>
@@ -101,7 +101,7 @@
         <div class="card kpi warn">
           <div class="card-title">Tempo Residual</div>
           <div class="val" id="kpi-residual">0h</div>
-          <div class="lbl">Desperdício por Ciclo</div>
+          <div class="lbl">Ciclo Acima do Padrão</div>
         </div>
         <div class="card kpi danger">
           <div class="card-title">Gargalos</div>
@@ -350,14 +350,25 @@
           <table class="paradas-table">
             <thead>
               <tr>
-                <th>Data</th>
-                <th>Operador</th>
-                <th>Máquina</th>
-                <th>Peça</th>
-                <th>Qtd</th>
-                <th>Eficiência</th>
-                <th>Status</th>
-                <th>Ação</th>
+                <th style="white-space:nowrap;">Data</th>
+                <th style="white-space:nowrap;">Mês</th>
+                <th style="white-space:nowrap;">Turno</th>
+                <th style="white-space:nowrap;">Máquina</th>
+                <th style="white-space:nowrap;">Operador</th>
+                <th style="white-space:nowrap;">Cód. Peça</th>
+                <th style="white-space:nowrap;">Qtd Produzida</th>
+                <th style="white-space:nowrap;">Padrão Pç/H</th>
+                <th style="white-space:nowrap;">H. Prod.</th>
+                <th style="white-space:nowrap;">H. Início</th>
+                <th style="white-space:nowrap;">H. Fim</th>
+                <th style="white-space:nowrap;">H. Disponíveis</th>
+                <th style="white-space:nowrap;">H. Prog.</th>
+                <th style="white-space:nowrap;">H. Trab.</th>
+                <th style="white-space:nowrap;">Cód. Parada</th>
+                <th style="white-space:nowrap;">Desc. Parada</th>
+                <th style="white-space:nowrap;">H. Paradas</th>
+                <th style="white-space:nowrap;">Tipo Parada</th>
+                <th style="white-space:nowrap;">Ações</th>
               </tr>
             </thead>
             <tbody id="db-body">
@@ -432,7 +443,7 @@
           <div class="card kpi blue" style="padding: 20px;">
             <div class="card-title" style="margin-bottom: 10px;">Horas Programadas</div>
             <div class="val" id="part-hprog" style="font-size: 32px;">00:00</div>
-            <div class="lbl">Total no Período</div>
+            <div class="lbl">Tempo Bruto</div>
           </div>
           <div class="card kpi warn" style="padding: 20px;">
             <div class="card-title" style="margin-bottom: 10px;">Horas Trabalhadas</div>
@@ -442,7 +453,7 @@
           <div class="card kpi" id="part-balance-card" style="padding: 20px;">
             <div class="card-title" style="margin-bottom: 10px;">Saldo de Tempo</div>
             <div class="val" id="part-balance" style="font-size: 32px;">00:00</div>
-            <div class="lbl">Ganho/Perda de Prod.</div>
+            <div class="lbl">T. Programado x T. Realizado</div>
           </div>
         </div>
 
@@ -455,7 +466,7 @@
           <div class="card kpi" id="part-efic-card" style="padding: 20px;">
             <div class="card-title" style="margin-bottom: 10px;">Eficiência Alcançada</div>
             <div class="val" id="part-efic" style="font-size: 32px;">0%</div>
-            <div class="lbl">vs. Meta</div>
+            <div class="lbl">Programado x Meta</div>
           </div>
         </div>
 
@@ -625,10 +636,11 @@
   <div class="modal-bg" id="modal-edit-registro">
     <div class="modal modal-large">
       <div class="modal-close" onclick="closeEditModal()">×</div>
-      
+
       <div class="mb-24">
         <h2 class="text-accent mono" style="font-size: 20px; letter-spacing: 2px;">✏️ EDITAR TURNO COMPLETO</h2>
-        <p style="color:var(--text-muted); font-size:12px; margin-top:4px;">Modifique os dados abaixo. As alterações serão salvas diretamente na base de dados de tempos.</p>
+        <p style="color:var(--text-muted); font-size:12px; margin-top:4px;">Modifique os dados abaixo. As alterações
+          serão salvas diretamente na base de dados de tempos.</p>
       </div>
 
       <input type="hidden" id="edit-reg-id">
@@ -732,7 +744,8 @@
       <!-- SEÇÃO 4: OBSERVAÇÕES -->
       <div class="form-section">
         <h3 class="mono text-accent">📝 OBSERVAÇÕES DO OPERADOR</h3>
-        <textarea id="edit-f-obs" style="width: 100%; height: 100px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 12px; padding: 15px; color: var(--text); font-family: var(--font-body); outline: none;"></textarea>
+        <textarea id="edit-f-obs"
+          style="width: 100%; height: 100px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 12px; padding: 15px; color: var(--text); font-family: var(--font-body); outline: none;"></textarea>
       </div>
 
       <div class="flex-end mt-24">
@@ -747,7 +760,7 @@
     <div class="modal" style="width: 450px;">
       <div class="modal-close" onclick="closeConfigModal()">×</div>
       <h2 class="text-accent mono mb-24" style="font-size: 18px;">✏️ EDITAR CONFIGURAÇÃO</h2>
-      
+
       <input type="hidden" id="edit-conf-id">
       <input type="hidden" id="edit-conf-table">
 
