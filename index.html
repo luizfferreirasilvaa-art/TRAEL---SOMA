@@ -1,169 +1,649 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SOMA - Inteligência em Cronoanálise</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
-<!-- Supabase SDK -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<!-- Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<!-- Auth Module (deve ser carregado antes do app.js) -->
-<script src="auth.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SOMA - Inteligência em Cronoanálise</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <!-- Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Auth Module (deve ser carregado antes do app.js) -->
+  <script src="auth.js"></script>
 </head>
+
 <body>
 
-<!-- SIDEBAR -->
-<div id="sidebar">
-  <div class="logo">
-    <h1>⚙ SOMA</h1>
-    <p>INTELIGÊNCIA INDUSTRIAL</p>
-  </div>
-  <nav>
-    <div class="nav-item active" onclick="setPage('dashboard')" id="nav-dashboard">
-      <span class="nav-icon">📊</span><span>Dashboard</span>
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div class="logo">
+      <h1>⚙ SOMA</h1>
+      <p>INTELIGÊNCIA INDUSTRIAL</p>
     </div>
-    <div class="nav-item" onclick="setPage('digitador')" id="nav-digitador">
-      <span class="nav-icon">✏️</span><span>Digitador</span>
-    </div>
-    <div class="nav-item" onclick="setPage('banco')" id="nav-banco">
-      <span class="nav-icon">🗄️</span><span>Base de dados de tempos</span>
-    </div>
-    <div class="nav-item" onclick="setPage('paradas')" id="nav-paradas">
-      <span class="nav-icon">🛑</span><span>Análise Paradas</span>
-    </div>
-    <div class="nav-item" onclick="setPage('particular')" id="nav-particular">
-      <span class="nav-icon">👤</span><span>Análise Particular</span>
-    </div>
-    <div class="nav-item" onclick="setPage('config')" id="nav-config">
-      <span class="nav-icon">⚙️</span><span>Configurações</span>
-    </div>
-    <div class="nav-item" onclick="setPage('auditoria')" id="nav-auditoria" style="display:none;">
-      <span class="nav-icon">📜</span><span>Últimas Alterações</span>
-    </div>
-  </nav>
-  <div class="sidebar-footer">
-    <button class="btn btn-outline btn-sm" onclick="toggleTheme()" style="width:100%; margin-bottom:10px;">🌓 Alternar Tema</button>
-    <span style="font-size:11px;color:var(--text-muted);">v2.2 · SOMA MODULAR</span>
-  </div>
-</div>
-
-<!-- MAIN -->
-<div id="main">
-  <div class="topbar">
-    <h2 id="page-title">Dashboard Operacional</h2>
-    <div class="topbar-actions">
-      <button class="btn btn-outline btn-sm" style="display:none;">⚡ Simular Dados</button>
-      <button class="btn btn-outline btn-sm" onclick="exportCSV()">⬇ Exportar CSV</button>
-      <button class="btn btn-danger btn-sm" style="display:none;">🗑 Limpar Local</button>
+    <nav>
+      <div class="nav-item active" onclick="setPage('dashboard')" id="nav-dashboard">
+        <span class="nav-icon">📊</span><span>Dashboard</span>
+      </div>
+      <div class="nav-item" onclick="setPage('digitador')" id="nav-digitador">
+        <span class="nav-icon">✏️</span><span>Digitador</span>
+      </div>
+      <div class="nav-item" onclick="setPage('banco')" id="nav-banco">
+        <span class="nav-icon">🗄️</span><span>Base de dados de tempos</span>
+      </div>
+      <div class="nav-item" onclick="setPage('paradas')" id="nav-paradas">
+        <span class="nav-icon">🛑</span><span>Análise Paradas</span>
+      </div>
+      <div class="nav-item" onclick="setPage('particular')" id="nav-particular">
+        <span class="nav-icon">👤</span><span>Análise Particular</span>
+      </div>
+      <div class="nav-item" onclick="setPage('config')" id="nav-config">
+        <span class="nav-icon">⚙️</span><span>Configurações</span>
+      </div>
+      <div class="nav-item" onclick="setPage('auditoria')" id="nav-auditoria" style="display:none;">
+        <span class="nav-icon">📜</span><span>Últimas Alterações</span>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="btn btn-outline btn-sm" onclick="toggleTheme()" style="width:100%; margin-bottom:10px;">🌓 Alternar
+        Tema</button>
+      <span style="font-size:11px;color:var(--text-muted);">v2.2 · SOMA MODULAR</span>
     </div>
   </div>
 
-  <!-- DASHBOARD (RULE 4) -->
-  <div class="page active" id="page-dashboard">
-    <!-- FILTROS DO DASHBOARD -->
-    <div class="card mb-24" style="padding: 16px 28px;">
-      <div class="grid-4" style="gap: 16px; align-items: center;">
-        <select id="dash-filter-setor" onchange="renderAll()">
-          <option value="">Todos Setores</option>
-        </select>
-        <select id="dash-filter-turno" onchange="renderAll()">
-          <option value="">Todos Turnos</option>
-          <option value="D">D – Diurno</option>
-          <option value="N">N – Noturno</option>
-          <option value="M">M – Misto</option>
-        </select>
-        <select id="dash-filter-empresa" onchange="renderAll()">
-          <option value="">Todas Empresas</option>
-        </select>
-        <button class="btn btn-outline btn-sm" onclick="clearDashFilters()">Limpar Filtros</button>
+  <!-- MAIN -->
+  <div id="main">
+    <div class="topbar">
+      <h2 id="page-title">Dashboard Operacional</h2>
+      <div class="topbar-actions">
+        <button class="btn btn-outline btn-sm" style="display:none;">⚡ Simular Dados</button>
+        <button class="btn btn-outline btn-sm" onclick="exportCSV()">⬇ Exportar CSV</button>
+        <button class="btn btn-danger btn-sm" style="display:none;">🗑 Limpar Local</button>
       </div>
     </div>
 
-    <div class="grid-4 mb-24">
-      <div class="card kpi accent">
-        <div class="card-title">Eficiência Global</div>
-        <div class="val" id="kpi-efic-global">0%</div>
-        <div class="lbl">vs. Tempo Padrão</div>
+    <!-- DASHBOARD (RULE 4) -->
+    <div class="page active" id="page-dashboard">
+      <!-- FILTROS DO DASHBOARD -->
+      <div class="card mb-24" style="padding: 16px 28px;">
+        <div class="grid-4" style="gap: 16px; align-items: center;">
+          <select id="dash-filter-setor" onchange="renderAll()">
+            <option value="">Todos Setores</option>
+          </select>
+          <select id="dash-filter-turno" onchange="renderAll()">
+            <option value="">Todos Turnos</option>
+            <option value="D">D – Diurno</option>
+            <option value="N">N – Noturno</option>
+            <option value="M">M – Misto</option>
+          </select>
+          <select id="dash-filter-empresa" onchange="renderAll()">
+            <option value="">Todas Empresas</option>
+          </select>
+          <button class="btn btn-outline btn-sm" onclick="clearDashFilters()">Limpar Filtros</button>
+        </div>
       </div>
-      <div class="card kpi blue">
-        <div class="card-title">Volume Total</div>
-        <div class="val" id="kpi-qtd-total">0</div>
-        <div class="lbl">Peças Produzidas</div>
+
+      <div class="grid-4 mb-24">
+        <div class="card kpi accent">
+          <div class="card-title">Eficiência Global</div>
+          <div class="val" id="kpi-efic-global">0%</div>
+          <div class="lbl">vs. Tempo Padrão</div>
+        </div>
+        <div class="card kpi blue">
+          <div class="card-title">Volume Total</div>
+          <div class="val" id="kpi-qtd-total">0</div>
+          <div class="lbl">Peças Produzidas</div>
+        </div>
+        <div class="card kpi warn">
+          <div class="card-title">Tempo Residual</div>
+          <div class="val" id="kpi-residual">0h</div>
+          <div class="lbl">Desperdício por Ciclo</div>
+        </div>
+        <div class="card kpi danger">
+          <div class="card-title">Gargalos</div>
+          <div class="val" id="kpi-gargalos">0</div>
+          <div class="lbl">Alertas Críticos</div>
+        </div>
       </div>
-      <div class="card kpi warn">
-        <div class="card-title">Tempo Residual</div>
-        <div class="val" id="kpi-residual">0h</div>
-        <div class="lbl">Desperdício por Ciclo</div>
+
+      <div class="card mb-24">
+        <div class="card-title">RESUMO EXECUTIVO</div>
+        <div id="parecer-consultivo">
+          <em>Sincronizando registros de cronoanálise...</em>
+        </div>
       </div>
-      <div class="card kpi danger">
-        <div class="card-title">Gargalos</div>
-        <div class="val" id="kpi-gargalos">0</div>
-        <div class="lbl">Alertas Críticos</div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">TABELA COMPARATIVA DE TEMPOS</div>
+          <div class="table-wrap">
+            <table class="paradas-table">
+              <thead>
+                <tr>
+                  <th>Elemento</th>
+                  <th>T. Médio</th>
+                  <th>T. Normal</th>
+                  <th>T. Padrão</th>
+                </tr>
+              </thead>
+              <tbody id="table-comparativa">
+                <tr>
+                  <td colspan="4" style="text-align:center;color:var(--muted)">Aguardando dados...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">GANHOS E ALERTAS</div>
+          <div id="ganhos-alertas" class="config-list">
+            <p style="color:var(--muted);font-size:13px;"><em>Sem observações de campo no momento.</em></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mt-24">
+        <div class="card-title">PROJEÇÃO DE EFICIÊNCIA (ENTREGA ESTIMADA)</div>
+        <div id="projecao-entrega" style="font-family:var(--font-mono); font-size:18px; color:var(--accent);">
+          -- peças para o restante do turno
+        </div>
       </div>
     </div>
 
-    <div class="card mb-24">
-      <div class="card-title">RESUMO EXECUTIVO</div>
-      <div id="parecer-consultivo">
-        <em>Sincronizando registros de cronoanálise...</em>
-      </div>
-    </div>
-
-    <div class="grid-2">
+    <!-- DIGITADOR -->
+    <div class="page" id="page-digitador">
       <div class="card">
-        <div class="card-title">TABELA COMPARATIVA DE TEMPOS</div>
+        <div class="form-section">
+          <h3>📋 IDENTIFICAÇÃO DO TURNO</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Data</label>
+              <input type="date" id="f-data" onchange="updateMonth()">
+            </div>
+            <div class="form-group">
+              <label>Mês</label>
+              <input type="number" id="f-mes" readonly>
+            </div>
+            <div class="form-group">
+              <label>Cód. Turno</label>
+              <select id="f-turno">
+                <option value="D">D – Diurno</option>
+                <option value="N">N – Noturno</option>
+                <option value="M">M – Misto</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Cód. Operador</label>
+              <select id="f-codoper" onchange="fillOper()">
+                <option value="">Selecione</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Desc. Operador</label>
+              <input type="text" id="f-descoper" readonly>
+            </div>
+            <div class="form-group">
+              <label>Cód. Máquina</label>
+              <select id="f-codmaq" onchange="fillMaq()">
+                <option value="">Selecione</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Desc. Máquina</label>
+              <input type="text" id="f-descmaq" readonly>
+            </div>
+            <div class="form-group">
+              <label>Hora Início</label>
+              <input type="time" id="f-h-inicio" onchange="calcTurnHours()">
+            </div>
+            <div class="form-group">
+              <label>Hora Fim</label>
+              <input type="time" id="f-h-fim" onchange="calcTurnHours()">
+            </div>
+            <div class="form-group">
+              <label>Horas Disponíveis</label>
+              <input type="number" id="f-hdisp" step="0.01" value="9.8" oninput="calcResumo()">
+            </div>
+            <div class="form-group">
+              <label>Horas Prog.</label>
+              <input type="number" id="f-hprog" step="0.01" value="8.8" oninput="calcResumo()">
+            </div>
+            <div class="form-group">
+              <label>Setor</label>
+              <select id="f-codsetor" onchange="fillSetor()">
+                <option value="">Selecione</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Desc. Setor</label>
+              <input type="text" id="f-descsetor" readonly>
+            </div>
+            <div class="form-group">
+              <label>Empresa</label>
+              <select id="f-empresa">
+                <option value="">Selecione</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3>⚡ PRODUÇÃO (PEÇAS)</h3>
+          <div class="table-wrap">
+            <table class="paradas-table">
+              <thead>
+                <tr>
+                  <th>Cód. Peça</th>
+                  <th>Qtd. Produzida</th>
+                  <th>Padrão Pç/H</th>
+                  <th>Horas Produtivas</th>
+                  <th>KWA Total</th>
+                  <th>KWA Médio</th>
+                  <th>Classe Equip.</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="pecas-body">
+                <!-- Linhas dinâmicas -->
+              </tbody>
+            </table>
+          </div>
+          <button id="btn-add-peca" class="btn btn-outline btn-sm mt-16" onclick="addPecaRow()">+ Linha Peça</button>
+        </div>
+
+        <div class="form-section">
+          <h3>🛑 PARADAS</h3>
+          <div class="table-wrap">
+            <table class="paradas-table">
+              <thead>
+                <tr>
+                  <th>Cód. Parada</th>
+                  <th>Desc. Parada</th>
+                  <th>Horas Paradas</th>
+                  <th>Tipo</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="paradas-body">
+                <!-- Linhas dinâmicas -->
+              </tbody>
+            </table>
+          </div>
+          <button id="btn-add-parada" class="btn btn-outline btn-sm mt-16" onclick="addParadaRow()">+ Linha
+            Parada</button>
+        </div>
+
+        <div class="form-section">
+          <h3>📝 OBSERVAÇÕES DO OPERADOR</h3>
+          <div class="table-wrap">
+            <table class="paradas-table">
+              <thead>
+                <tr>
+                  <th>Título da Observação</th>
+                  <th>Descrição Detalhada</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="obs-body">
+                <!-- Linhas dinâmicas -->
+              </tbody>
+            </table>
+          </div>
+          <button id="btn-add-obs" class="btn btn-outline btn-sm mt-16" onclick="addObsRow()">+ Linha
+            Observação</button>
+        </div>
+
+        <div class="form-section">
+          <h3>📊 RESUMO DO TURNO</h3>
+          <div class="grid-6 mt-16"
+            style="background:var(--surface); padding:15px; border-radius:8px; border:1px solid var(--border);">
+            <div class="res-item">
+              <div class="val" id="res-qtd">0</div>
+              <div class="lbl">Qtd Total Produzida</div>
+            </div>
+            <div class="res-item">
+              <div class="val" id="res-hprod">0.0000</div>
+              <div class="lbl">Horas Produtivas</div>
+            </div>
+            <div class="res-item">
+              <div class="val" id="res-hpar">0.0000</div>
+              <div class="lbl">Horas Paradas</div>
+            </div>
+            <div class="res-item">
+              <div class="val" id="res-htrab">0.0000</div>
+              <div class="lbl">Horas Trabalhadas</div>
+            </div>
+            <div class="res-item">
+              <div class="val" id="res-efic" style="color:var(--accent)">0.0%</div>
+              <div class="lbl">Eficiência</div>
+            </div>
+            <div class="res-item">
+              <div class="val" id="res-util" style="color:var(--accent3)">0.0%</div>
+              <div class="lbl">Utilização</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex-end mt-24">
+          <button class="btn btn-outline" onclick="clearForm()">Limpar</button>
+          <button id="btn-salvar-registro" class="btn btn-primary" onclick="saveRegisto()">💾 Salvar Registro</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- BANCO DE DADOS (RULE 5) -->
+    <div class="page" id="page-banco">
+      <div class="card">
+        <div class="card-title">REGISTRO HISTÓRICO DE CRONOANÁLISE</div>
+        <div class="grid-4 mb-16">
+          <input type="text" id="filter-peca" placeholder="Filtrar por Peça..." oninput="renderDatabase()">
+          <select id="filter-oper" onchange="renderDatabase()">
+            <option value="">Todos Operadores</option>
+          </select>
+          <select id="filter-setor" onchange="renderDatabase()">
+            <option value="">Todos Setores</option>
+          </select>
+          <input type="date" id="filter-data" onchange="renderDatabase()">
+          <button class="btn btn-outline btn-sm" onclick="clearFilters()">Limpar Filtros</button>
+        </div>
         <div class="table-wrap">
           <table class="paradas-table">
             <thead>
               <tr>
-                <th>Elemento</th>
-                <th>T. Médio</th>
-                <th>T. Normal</th>
-                <th>T. Padrão</th>
+                <th>Data</th>
+                <th>Operador</th>
+                <th>Máquina</th>
+                <th>Peça</th>
+                <th>Qtd</th>
+                <th>Eficiência</th>
+                <th>Status</th>
+                <th>Ação</th>
               </tr>
             </thead>
-            <tbody id="table-comparativa">
-              <tr><td colspan="4" style="text-align:center;color:var(--muted)">Aguardando dados...</td></tr>
+            <tbody id="db-body">
+              <!-- Dados dinâmicos -->
             </tbody>
           </table>
         </div>
       </div>
-      <div class="card">
-        <div class="card-title">GANHOS E ALERTAS</div>
-        <div id="ganhos-alertas" class="config-list">
-          <p style="color:var(--muted);font-size:13px;"><em>Sem observações de campo no momento.</em></p>
+    </div>
+
+    <!-- ANÁLISE DE PARADAS (RULE 1.3) -->
+    <div class="page" id="page-paradas">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">PARADAS POR TIPO</div>
+          <div style="height: 250px;">
+            <canvas id="chart-tipo"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">TOP 5 MOTIVOS DE PARADA</div>
+          <div style="height: 250px;">
+            <canvas id="chart-motivos"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="card mt-24">
+        <div class="card-title">DETALHE DAS PARADAS</div>
+        <div class="table-wrap">
+          <table class="paradas-table">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Motivo</th>
+                <th>Tempo (h)</th>
+                <th>Tipo</th>
+              </tr>
+            </thead>
+            <tbody id="paradas-detail-body">
+              <!-- Dados dinâmicos -->
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
 
-    <div class="card mt-24">
-      <div class="card-title">PROJEÇÃO DE EFICIÊNCIA (ENTREGA ESTIMADA)</div>
-      <div id="projecao-entrega" style="font-family:var(--font-mono); font-size:18px; color:var(--accent);">
-        -- peças para o restante do turno
+    <!-- ANÁLISE PARTICULAR -->
+    <div class="page" id="page-particular">
+
+      <!-- Seletor de profissional -->
+      <div class="card mb-24">
+        <div class="card-title">👤 SELECIONAR PROFISSIONAL</div>
+        <div class="row" style="gap:12px; align-items:center;">
+          <select id="particular-oper" onchange="renderParticular()" style="flex:1; max-width:420px;">
+            <option value="">— Selecione um operador —</option>
+          </select>
+          <span id="part-meta-badge" style="font-size:13px; color:var(--muted);"></span>
+        </div>
+      </div>
+
+      <!-- Estado vazio -->
+      <div id="particular-empty" class="card" style="text-align:center; padding:60px 20px;">
+        <div style="font-size:52px; margin-bottom:16px;">📊</div>
+        <div style="color:var(--muted); font-size:14px;">Selecione um profissional para visualizar sua análise de
+          desempenho individual.</div>
+      </div>
+
+      <!-- Conteúdo carregado -->
+      <div id="particular-content" style="display:none;">
+        <!-- KPIs -->
+        <div class="grid-4 mb-24">
+          <div class="card kpi blue">
+            <div class="card-title">Horas Programadas</div>
+            <div class="val" id="part-hprog">0h</div>
+            <div class="lbl">Total no Período</div>
+          </div>
+          <div class="card kpi warn">
+            <div class="card-title">Horas Trabalhadas</div>
+            <div class="val" id="part-htrab">0h</div>
+            <div class="lbl">Produção Real</div>
+          </div>
+          <div class="card kpi accent">
+            <div class="card-title">Meta de Eficiência</div>
+            <div class="val" id="part-meta">85%</div>
+            <div class="lbl">Alvo do Profissional</div>
+          </div>
+          <div class="card kpi" id="part-efic-card">
+            <div class="card-title">Eficiência Alcançada</div>
+            <div class="val" id="part-efic">0%</div>
+            <div class="lbl">vs. Meta</div>
+          </div>
+        </div>
+
+        <!-- Projetos + Gráfico -->
+        <div class="grid-2 mb-24">
+          <div class="card">
+            <div class="card-title">PROJETOS DO PROFISSIONAL</div>
+            <div class="table-wrap">
+              <table class="paradas-table">
+                <thead>
+                  <tr>
+                    <th>Projeto / Peça</th>
+                    <th>Qtd. Produzida</th>
+                    <th>KWA Total</th>
+                    <th>KWA Médio</th>
+                    <th>Classe Equip.</th>
+                    <th>Máquina</th>
+                    <th>Eficiência</th>
+                  </tr>
+                </thead>
+                <tbody id="part-projects-body">
+                  <tr>
+                    <td colspan="7" style="text-align:center;padding:20px;color:var(--muted);">Sem projetos.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">DESEMPENHO POR PROJETO</div>
+            <div style="height:300px; position:relative;">
+              <canvas id="chart-particular"></canvas>
+            </div>
+          </div>
+
+          <div class="card mt-24">
+            <div class="card-title">OBSERVAÇÕES DO PROFISSIONAL</div>
+            <div id="part-obs-body">
+              <em style="color:var(--muted);font-size:13px;">Selecione um profissional para ver as observações.</em>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONFIGURAÇÕES (RULE 1.4) -->
+    <div class="page" id="page-config">
+
+      <!-- Linha 1: Operadores + Máquinas (grid-2) -->
+      <div class="grid-2">
+
+        <!-- OPERADORES -->
+        <div id="config-operadores-section">
+          <div class="card">
+            <div class="card-title">OPERADORES</div>
+            <div id="list-oper" class="config-list"></div>
+            <div class="row mt-16" id="btn-add-oper">
+              <input type="text" id="new-oper-cod" placeholder="Cód" style="width:60px;">
+              <input type="text" id="new-oper-nome" placeholder="Nome Completo" style="flex:1;">
+              <button class="btn btn-primary btn-sm" onclick="addConfig('oper')">+</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- MÁQUINAS -->
+        <div>
+          <div class="card">
+            <div class="card-title">MÁQUINAS</div>
+            <div id="list-maq" class="config-list"></div>
+            <div class="row mt-16">
+              <input type="text" id="new-maq-cod" placeholder="Cód" style="width:60px;">
+              <input type="text" id="new-maq-nome" placeholder="Descrição" style="flex:1;">
+              <button class="btn btn-primary btn-sm" onclick="addConfig('maq')">+</button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /grid-2 -->
+
+      <!-- MOTIVOS DE PARADA -->
+      <div class="card mt-24">
+        <div class="card-title">MOTIVOS DE PARADA</div>
+        <div id="list-parada-motivos" class="config-list"></div>
+        <div class="row mt-16">
+          <input type="text" id="new-par-cod" placeholder="Cód" style="width:60px;">
+          <input type="text" id="new-par-desc" placeholder="Descrição do Motivo" style="flex:1;">
+          <select id="new-par-tipo">
+            <option value="PROG">PROG</option>
+            <option value="NÃO PROG">NÃO PROG</option>
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="addConfig('par')">+</button>
+        </div>
+      </div>
+
+      <div class="grid-2 mt-24">
+        <!-- SETORES -->
+        <div class="card" id="config-setores-section">
+          <div class="card-title">SETORES</div>
+          <div id="list-setores" class="config-list"><em style="color:var(--muted);font-size:13px;">Carregando...</em>
+          </div>
+          <div class="row mt-16" id="btn-add-set">
+            <input type="text" id="new-set-cod" placeholder="Cód" style="width:60px;">
+            <input type="text" id="new-set-desc" placeholder="Descrição" style="flex:1;">
+            <input type="number" id="new-set-meta" placeholder="Meta %" style="width:75px;" min="0" max="100" step="1">
+            <button class="btn btn-primary btn-sm" onclick="addConfig('set')">+</button>
+          </div>
+        </div>
+
+        <!-- EMPRESAS -->
+        <div class="card" id="config-empresas-section">
+          <div class="card-title">EMPRESAS</div>
+          <div id="list-empresas" class="config-list"><em style="color:var(--muted);font-size:13px;">Carregando...</em>
+          </div>
+          <div class="row mt-16" id="btn-add-emp">
+            <input type="text" id="new-emp-cod" placeholder="Cód" style="width:60px;">
+            <input type="text" id="new-emp-desc" placeholder="Nome da Empresa" style="flex:1;">
+            <button class="btn btn-primary btn-sm" onclick="addConfig('emp')">+</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /page-config -->
+
+    <!-- AUDITORIA (só Programador) -->
+    <div class="page" id="page-auditoria">
+      <div class="card">
+        <div class="card-title">📜 ÚLTIMAS ALTERAÇÕES — AUDITORIA DO SISTEMA</div>
+        <div class="table-wrap">
+          <table class="paradas-table">
+            <thead>
+              <tr>
+                <th>Data/Hora</th>
+                <th>Operador</th>
+                <th>Tipo</th>
+                <th>Peça / Motivo</th>
+                <th>Registrado por</th>
+                <th>Perfil</th>
+              </tr>
+            </thead>
+            <tbody id="audit-body">
+              <tr>
+                <td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted);">Carregando auditoria...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+
+  <!-- MODAL confirm -->
+  <div class="modal-bg" id="modal-clear">
+    <div class="modal">
+      <h3>⚠️ Limpar Base de Dados?</h3>
+      <p style="color:var(--muted);font-size:13px;margin-top:8px;">Esta ação apagará TODOS os registros de produção
+        permanentemente do Supabase. Deseja continuar?</p>
+      <div class="flex-end mt-24">
+        <button class="btn btn-outline" onclick="closeModal()">Cancelar</button>
+        <button class="btn btn-danger" onclick="clearDB()">Confirmar Limpeza</button>
       </div>
     </div>
   </div>
 
-  <!-- DIGITADOR -->
-  <div class="page" id="page-digitador">
-    <div class="card">
+  <!-- MODAL Edição de Registro (FULL VERSION) -->
+  <div class="modal-bg" id="modal-edit-registro">
+    <div class="modal modal-large">
+      <div class="modal-close" onclick="closeEditModal()">×</div>
+      
+      <div class="mb-24">
+        <h2 class="text-accent mono" style="font-size: 20px; letter-spacing: 2px;">✏️ EDITAR TURNO COMPLETO</h2>
+        <p style="color:var(--text-muted); font-size:12px; margin-top:4px;">Modifique os dados abaixo. As alterações serão salvas diretamente na base de dados de tempos.</p>
+      </div>
+
+      <input type="hidden" id="edit-reg-id">
+
+      <!-- SEÇÃO 1: IDENTIFICAÇÃO -->
       <div class="form-section">
-        <h3>📋 IDENTIFICAÇÃO DO TURNO</h3>
+        <h3 class="mono text-accent">📋 IDENTIFICAÇÃO DO TURNO</h3>
         <div class="form-grid">
           <div class="form-group">
             <label>Data</label>
-            <input type="date" id="f-data" onchange="updateMonth()">
+            <input type="date" id="edit-f-data" onchange="updateEditMonth()">
           </div>
           <div class="form-group">
             <label>Mês</label>
-            <input type="number" id="f-mes" readonly>
+            <input type="number" id="edit-f-mes" readonly class="mono">
           </div>
           <div class="form-group">
             <label>Cód. Turno</label>
-            <select id="f-turno">
+            <select id="edit-f-turno">
               <option value="D">D – Diurno</option>
               <option value="N">N – Noturno</option>
               <option value="M">M – Misto</option>
@@ -171,61 +651,38 @@
           </div>
           <div class="form-group">
             <label>Cód. Operador</label>
-            <select id="f-codoper" onchange="fillOper()">
+            <select id="edit-f-codoper" onchange="fillEditOper()">
               <option value="">Selecione</option>
             </select>
-          </div>
-          <div class="form-group">
-            <label>Desc. Operador</label>
-            <input type="text" id="f-descoper" readonly>
           </div>
           <div class="form-group">
             <label>Cód. Máquina</label>
-            <select id="f-codmaq" onchange="fillMaq()">
+            <select id="edit-f-codmaq" onchange="fillEditMaq()">
               <option value="">Selecione</option>
             </select>
-          </div>
-          <div class="form-group">
-            <label>Desc. Máquina</label>
-            <input type="text" id="f-descmaq" readonly>
-          </div>
-          <div class="form-group">
-            <label>Hora Início</label>
-            <input type="time" id="f-h-inicio" onchange="calcTurnHours()">
-          </div>
-          <div class="form-group">
-            <label>Hora Fim</label>
-            <input type="time" id="f-h-fim" onchange="calcTurnHours()">
-          </div>
-          <div class="form-group">
-            <label>Horas Disponíveis</label>
-            <input type="number" id="f-hdisp" step="0.01" value="9.8" oninput="calcResumo()">
-          </div>
-          <div class="form-group">
-            <label>Horas Prog.</label>
-            <input type="number" id="f-hprog" step="0.01" value="8.8" oninput="calcResumo()">
           </div>
           <div class="form-group">
             <label>Setor</label>
-            <select id="f-codsetor" onchange="fillSetor()">
+            <select id="edit-f-codsetor">
               <option value="">Selecione</option>
             </select>
-          </div>
-          <div class="form-group">
-            <label>Desc. Setor</label>
-            <input type="text" id="f-descsetor" readonly>
           </div>
           <div class="form-group">
             <label>Empresa</label>
-            <select id="f-empresa">
+            <select id="edit-f-empresa">
               <option value="">Selecione</option>
             </select>
+          </div>
+          <div class="form-group">
+            <label>Horas Prog.</label>
+            <input type="number" id="edit-f-hprog" step="0.01" oninput="calcEditResumo()" class="mono">
           </div>
         </div>
       </div>
 
+      <!-- SEÇÃO 2: PRODUÇÃO -->
       <div class="form-section">
-        <h3>⚡ PRODUÇÃO (PEÇAS)</h3>
+        <h3 class="mono text-accent">⚡ PRODUÇÃO (PEÇAS)</h3>
         <div class="table-wrap">
           <table class="paradas-table">
             <thead>
@@ -234,460 +691,56 @@
                 <th>Qtd. Produzida</th>
                 <th>Padrão Pç/H</th>
                 <th>Horas Produtivas</th>
-                <th>KWA Total</th>
-                <th>KWA Médio</th>
-                <th>Classe Equip.</th>
-                <th></th>
+                <th>Eficiência %</th>
+                <th style="width: 50px;"></th>
               </tr>
             </thead>
-            <tbody id="pecas-body">
+            <tbody id="edit-pecas-body">
               <!-- Linhas dinâmicas -->
             </tbody>
           </table>
         </div>
-        <button id="btn-add-peca" class="btn btn-outline btn-sm mt-16" onclick="addPecaRow()">+ Linha Peça</button>
+        <button class="btn btn-outline btn-sm mt-16" onclick="addEditPecaRow()">+ Linha Peça</button>
       </div>
 
+      <!-- SEÇÃO 3: PARADAS -->
       <div class="form-section">
-        <h3>🛑 PARADAS</h3>
+        <h3 class="mono text-accent" style="color: var(--accent2)">🛑 PARADAS</h3>
         <div class="table-wrap">
           <table class="paradas-table">
             <thead>
               <tr>
                 <th>Cód. Parada</th>
-                <th>Desc. Parada</th>
+                <th>Descrição / Motivo</th>
                 <th>Horas Paradas</th>
                 <th>Tipo</th>
-                <th></th>
+                <th style="width: 50px;"></th>
               </tr>
             </thead>
-            <tbody id="paradas-body">
+            <tbody id="edit-paradas-body">
               <!-- Linhas dinâmicas -->
             </tbody>
           </table>
         </div>
-        <button id="btn-add-parada" class="btn btn-outline btn-sm mt-16" onclick="addParadaRow()">+ Linha Parada</button>
+        <button class="btn btn-outline btn-sm mt-16" onclick="addEditParadaRow()">+ Linha Parada</button>
       </div>
 
+      <!-- SEÇÃO 4: OBSERVAÇÕES -->
       <div class="form-section">
-        <h3>📝 OBSERVAÇÕES DO OPERADOR</h3>
-        <div class="table-wrap">
-          <table class="paradas-table">
-            <thead>
-              <tr>
-                <th>Título da Observação</th>
-                <th>Descrição Detalhada</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody id="obs-body">
-              <!-- Linhas dinâmicas -->
-            </tbody>
-          </table>
-        </div>
-        <button id="btn-add-obs" class="btn btn-outline btn-sm mt-16" onclick="addObsRow()">+ Linha Observação</button>
-      </div>
-
-      <div class="form-section">
-        <h3>📊 RESUMO DO TURNO</h3>
-        <div class="grid-6 mt-16" style="background:var(--surface); padding:15px; border-radius:8px; border:1px solid var(--border);">
-          <div class="res-item">
-            <div class="val" id="res-qtd">0</div>
-            <div class="lbl">Qtd Total Produzida</div>
-          </div>
-          <div class="res-item">
-            <div class="val" id="res-hprod">0.0000</div>
-            <div class="lbl">Horas Produtivas</div>
-          </div>
-          <div class="res-item">
-            <div class="val" id="res-hpar">0.0000</div>
-            <div class="lbl">Horas Paradas</div>
-          </div>
-          <div class="res-item">
-            <div class="val" id="res-htrab">0.0000</div>
-            <div class="lbl">Horas Trabalhadas</div>
-          </div>
-          <div class="res-item">
-            <div class="val" id="res-efic" style="color:var(--accent)">0.0%</div>
-            <div class="lbl">Eficiência</div>
-          </div>
-          <div class="res-item">
-            <div class="val" id="res-util" style="color:var(--accent3)">0.0%</div>
-            <div class="lbl">Utilização</div>
-          </div>
-        </div>
+        <h3 class="mono text-accent">📝 OBSERVAÇÕES DO OPERADOR</h3>
+        <textarea id="edit-f-obs" style="width: 100%; height: 100px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 12px; padding: 15px; color: var(--text); font-family: var(--font-body); outline: none;"></textarea>
       </div>
 
       <div class="flex-end mt-24">
-        <button class="btn btn-outline" onclick="clearForm()">Limpar</button>
-        <button id="btn-salvar-registro" class="btn btn-primary" onclick="saveRegisto()">💾 Salvar Registro</button>
+        <button class="btn btn-outline" onclick="closeEditModal()">Cancelar</button>
+        <button class="btn btn-primary" onclick="handleUpdate()" style="min-width: 180px;">💾 Salvar Alterações</button>
       </div>
     </div>
   </div>
 
-  <!-- BANCO DE DADOS (RULE 5) -->
-  <div class="page" id="page-banco">
-    <div class="card">
-      <div class="card-title">REGISTRO HISTÓRICO DE CRONOANÁLISE</div>
-      <div class="grid-4 mb-16">
-        <input type="text" id="filter-peca" placeholder="Filtrar por Peça..." oninput="renderDatabase()">
-        <select id="filter-oper" onchange="renderDatabase()">
-          <option value="">Todos Operadores</option>
-        </select>
-        <select id="filter-setor" onchange="renderDatabase()">
-          <option value="">Todos Setores</option>
-        </select>
-        <input type="date" id="filter-data" onchange="renderDatabase()">
-        <button class="btn btn-outline btn-sm" onclick="clearFilters()">Limpar Filtros</button>
-      </div>
-      <div class="table-wrap">
-        <table class="paradas-table">
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Operador</th>
-              <th>Máquina</th>
-              <th>Peça</th>
-              <th>Qtd</th>
-              <th>Eficiência</th>
-              <th>Status</th>
-              <th>Ação</th>
-            </tr>
-          </thead>
-          <tbody id="db-body">
-            <!-- Dados dinâmicos -->
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
+  <div id="toast"></div>
 
-  <!-- ANÁLISE DE PARADAS (RULE 1.3) -->
-  <div class="page" id="page-paradas">
-    <div class="grid-2">
-      <div class="card">
-        <div class="card-title">PARADAS POR TIPO</div>
-        <div style="height: 250px;">
-          <canvas id="chart-tipo"></canvas>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-title">TOP 5 MOTIVOS DE PARADA</div>
-        <div style="height: 250px;">
-          <canvas id="chart-motivos"></canvas>
-        </div>
-      </div>
-    </div>
-    <div class="card mt-24">
-      <div class="card-title">DETALHE DAS PARADAS</div>
-      <div class="table-wrap">
-        <table class="paradas-table">
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Motivo</th>
-              <th>Tempo (h)</th>
-              <th>Tipo</th>
-            </tr>
-          </thead>
-          <tbody id="paradas-detail-body">
-            <!-- Dados dinâmicos -->
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- ANÁLISE PARTICULAR -->
-  <div class="page" id="page-particular">
-
-    <!-- Seletor de profissional -->
-    <div class="card mb-24">
-      <div class="card-title">👤 SELECIONAR PROFISSIONAL</div>
-      <div class="row" style="gap:12px; align-items:center;">
-        <select id="particular-oper" onchange="renderParticular()" style="flex:1; max-width:420px;">
-          <option value="">— Selecione um operador —</option>
-        </select>
-        <span id="part-meta-badge" style="font-size:13px; color:var(--muted);"></span>
-      </div>
-    </div>
-
-    <!-- Estado vazio -->
-    <div id="particular-empty" class="card" style="text-align:center; padding:60px 20px;">
-      <div style="font-size:52px; margin-bottom:16px;">📊</div>
-      <div style="color:var(--muted); font-size:14px;">Selecione um profissional para visualizar sua análise de desempenho individual.</div>
-    </div>
-
-    <!-- Conteúdo carregado -->
-    <div id="particular-content" style="display:none;">
-      <!-- KPIs -->
-      <div class="grid-4 mb-24">
-        <div class="card kpi blue">
-          <div class="card-title">Horas Programadas</div>
-          <div class="val" id="part-hprog">0h</div>
-          <div class="lbl">Total no Período</div>
-        </div>
-        <div class="card kpi warn">
-          <div class="card-title">Horas Trabalhadas</div>
-          <div class="val" id="part-htrab">0h</div>
-          <div class="lbl">Produção Real</div>
-        </div>
-        <div class="card kpi accent">
-          <div class="card-title">Meta de Eficiência</div>
-          <div class="val" id="part-meta">85%</div>
-          <div class="lbl">Alvo do Profissional</div>
-        </div>
-        <div class="card kpi" id="part-efic-card">
-          <div class="card-title">Eficiência Alcançada</div>
-          <div class="val" id="part-efic">0%</div>
-          <div class="lbl">vs. Meta</div>
-        </div>
-      </div>
-
-      <!-- Projetos + Gráfico -->
-      <div class="grid-2 mb-24">
-        <div class="card">
-          <div class="card-title">PROJETOS DO PROFISSIONAL</div>
-          <div class="table-wrap">
-            <table class="paradas-table">
-              <thead>
-                <tr>
-                  <th>Projeto / Peça</th>
-                  <th>Qtd. Produzida</th>
-                  <th>KWA Total</th>
-                  <th>KWA Médio</th>
-                  <th>Classe Equip.</th>
-                  <th>Máquina</th>
-                  <th>Eficiência</th>
-                </tr>
-              </thead>
-              <tbody id="part-projects-body">
-                <tr><td colspan="7" style="text-align:center;padding:20px;color:var(--muted);">Sem projetos.</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-title">DESEMPENHO POR PROJETO</div>
-          <div style="height:300px; position:relative;">
-            <canvas id="chart-particular"></canvas>
-          </div>
-        </div>
-        
-        <div class="card mt-24">
-          <div class="card-title">OBSERVAÇÕES DO PROFISSIONAL</div>
-          <div id="part-obs-body">
-            <em style="color:var(--muted);font-size:13px;">Selecione um profissional para ver as observações.</em>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- CONFIGURAÇÕES (RULE 1.4) -->
-  <div class="page" id="page-config">
-
-    <!-- Linha 1: Operadores + Máquinas (grid-2) -->
-    <div class="grid-2">
-
-      <!-- OPERADORES -->
-      <div id="config-operadores-section">
-        <div class="card">
-          <div class="card-title">OPERADORES</div>
-          <div id="list-oper" class="config-list"></div>
-          <div class="row mt-16" id="btn-add-oper">
-            <input type="text" id="new-oper-cod" placeholder="Cód" style="width:60px;">
-            <input type="text" id="new-oper-nome" placeholder="Nome Completo" style="flex:1;">
-            <button class="btn btn-primary btn-sm" onclick="addConfig('oper')">+</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- MÁQUINAS -->
-      <div>
-        <div class="card">
-          <div class="card-title">MÁQUINAS</div>
-          <div id="list-maq" class="config-list"></div>
-          <div class="row mt-16">
-            <input type="text" id="new-maq-cod" placeholder="Cód" style="width:60px;">
-            <input type="text" id="new-maq-nome" placeholder="Descrição" style="flex:1;">
-            <button class="btn btn-primary btn-sm" onclick="addConfig('maq')">+</button>
-          </div>
-        </div>
-      </div>
-
-    </div><!-- /grid-2 -->
-
-    <!-- MOTIVOS DE PARADA -->
-    <div class="card mt-24">
-      <div class="card-title">MOTIVOS DE PARADA</div>
-      <div id="list-parada-motivos" class="config-list"></div>
-      <div class="row mt-16">
-        <input type="text" id="new-par-cod" placeholder="Cód" style="width:60px;">
-        <input type="text" id="new-par-desc" placeholder="Descrição do Motivo" style="flex:1;">
-        <select id="new-par-tipo">
-          <option value="PROG">PROG</option>
-          <option value="NÃO PROG">NÃO PROG</option>
-        </select>
-        <button class="btn btn-primary btn-sm" onclick="addConfig('par')">+</button>
-      </div>
-    </div>
-
-    <div class="grid-2 mt-24">
-      <!-- SETORES -->
-      <div class="card" id="config-setores-section">
-        <div class="card-title">SETORES</div>
-        <div id="list-setores" class="config-list"><em style="color:var(--muted);font-size:13px;">Carregando...</em></div>
-        <div class="row mt-16" id="btn-add-set">
-          <input type="text" id="new-set-cod" placeholder="Cód" style="width:60px;">
-          <input type="text" id="new-set-desc" placeholder="Descrição" style="flex:1;">
-          <input type="number" id="new-set-meta" placeholder="Meta %" style="width:75px;" min="0" max="100" step="1">
-          <button class="btn btn-primary btn-sm" onclick="addConfig('set')">+</button>
-        </div>
-      </div>
-
-      <!-- EMPRESAS -->
-      <div class="card" id="config-empresas-section">
-        <div class="card-title">EMPRESAS</div>
-        <div id="list-empresas" class="config-list"><em style="color:var(--muted);font-size:13px;">Carregando...</em></div>
-        <div class="row mt-16" id="btn-add-emp">
-          <input type="text" id="new-emp-cod" placeholder="Cód" style="width:60px;">
-          <input type="text" id="new-emp-desc" placeholder="Nome da Empresa" style="flex:1;">
-          <button class="btn btn-primary btn-sm" onclick="addConfig('emp')">+</button>
-        </div>
-      </div>
-    </div>
-
-  </div><!-- /page-config -->
-
-  <!-- AUDITORIA (só Programador) -->
-  <div class="page" id="page-auditoria">
-    <div class="card">
-      <div class="card-title">📜 ÚLTIMAS ALTERAÇÕES — AUDITORIA DO SISTEMA</div>
-      <div class="table-wrap">
-        <table class="paradas-table">
-          <thead>
-            <tr>
-              <th>Data/Hora</th>
-              <th>Operador</th>
-              <th>Tipo</th>
-              <th>Peça / Motivo</th>
-              <th>Registrado por</th>
-              <th>Perfil</th>
-            </tr>
-          </thead>
-          <tbody id="audit-body">
-            <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted);">Carregando auditoria...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-</div><!-- /main -->
-
-<!-- MODAL confirm -->
-<div class="modal-bg" id="modal-clear">
-  <div class="modal">
-    <h3>⚠️ Limpar Base de Dados?</h3>
-    <p style="color:var(--muted);font-size:13px;margin-top:8px;">Esta ação apagará TODOS os registros de produção permanentemente do Supabase. Deseja continuar?</p>
-    <div class="flex-end mt-24">
-      <button class="btn btn-outline" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-danger" onclick="clearDB()">Confirmar Limpeza</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL Edição de Registro -->
-<div class="modal-bg" id="modal-edit-registro">
-  <div class="modal" style="max-width: 500px;">
-    <h3>✏️ Editar Registro</h3>
-    <p style="color:var(--muted);font-size:13px;margin-top:8px;margin-bottom:16px;">Altere as informações abaixo e salve para recalcular a eficiência.</p>
-    
-    <input type="hidden" id="edit-reg-id">
-    <input type="hidden" id="edit-reg-tipo">
-
-    <div class="grid-2">
-      <div class="form-group">
-        <label>Data</label>
-        <input type="date" class="form-input" id="edit-reg-data">
-      </div>
-      <div class="form-group">
-        <label>Turno</label>
-        <select class="form-input" id="edit-reg-turno">
-          <option value="1">1º Turno</option>
-          <option value="2">2º Turno</option>
-          <option value="3">3º Turno</option>
-          <option value="COMERCIAL">Comercial</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="grid-2">
-      <div class="form-group">
-        <label>Operador</label>
-        <input type="text" class="form-input" id="edit-reg-oper">
-      </div>
-      <div class="form-group">
-        <label>Máquina</label>
-        <input type="text" class="form-input" id="edit-reg-maq">
-      </div>
-    </div>
-
-    <!-- Campos de PRODUCAO -->
-    <div id="edit-prod-fields" style="display:none; padding:15px; background:rgba(0, 242, 195, 0.05); border-radius:8px; margin-top:10px; border:1px solid rgba(0, 242, 195, 0.2);">
-      <div class="grid-2">
-        <div class="form-group">
-          <label>Código da Peça</label>
-          <input type="text" class="form-input" id="edit-reg-peca">
-        </div>
-        <div class="form-group">
-          <label>Quantidade</label>
-          <input type="number" class="form-input" id="edit-reg-qtd">
-        </div>
-      </div>
-      <div class="form-group mt-16">
-        <label>Classe do Equipamento</label>
-        <input type="text" class="form-input" id="edit-reg-classe">
-      </div>
-    </div>
-
-    <!-- Campos de PARADA -->
-    <div id="edit-parada-fields" style="display:none; padding:15px; background:rgba(255, 77, 109, 0.05); border-radius:8px; margin-top:10px; border:1px solid rgba(255, 77, 109, 0.2);">
-      <div class="grid-2">
-        <div class="form-group">
-          <label>Código Parada</label>
-          <input type="text" class="form-input" id="edit-reg-codparada">
-        </div>
-        <div class="form-group">
-          <label>Tipo Parada</label>
-          <select class="form-input" id="edit-reg-tipoparada">
-            <option value="PROG">PROG</option>
-            <option value="NÃO PROG">NÃO PROG</option>
-          </select>
-        </div>
-      </div>
-      <div class="grid-2">
-        <div class="form-group">
-          <label>Horas Paradas</label>
-          <input type="number" step="0.01" class="form-input" id="edit-reg-hparada">
-        </div>
-      </div>
-      <div class="form-group mt-16">
-        <label>Descrição / Motivo</label>
-        <input type="text" class="form-input" id="edit-reg-descparada">
-      </div>
-    </div>
-
-    <div class="flex-end mt-24">
-      <button class="btn btn-outline" onclick="closeEditModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveEditRegistro()">Salvar Alterações</button>
-    </div>
-  </div>
-</div>
-
-<div id="toast"></div>
-
-<script src="app.js"></script>
+  <script src="app.js"></script>
 </body>
+
 </html>

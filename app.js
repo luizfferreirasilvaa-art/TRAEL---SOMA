@@ -85,9 +85,18 @@ async function loadConfig() {
     const dashFilterEmpresa = document.getElementById('dash-filter-empresa');
     if (dashFilterEmpresa) dashFilterEmpresa.innerHTML = '<option value="">Todas Empresas</option>' + STATE.empresas.map(e => `<option value="${e.cod}">${e.descricao}</option>`).join('');
 
-    // Particular
-    const partOper = document.getElementById('particular-oper');
-    if (partOper) partOper.innerHTML = '<option value="">— Selecione um operador —</option>' + STATE.operadores.map(o => `<option value="${o.cod}">${o.nome}</option>`).join('');
+    // Preencher Selects no Modal de Edição
+    const meOper = document.getElementById('edit-f-codoper');
+    if (meOper) meOper.innerHTML = '<option value="">Selecione</option>' + STATE.operadores.map(o => `<option value="${o.cod}">${o.cod} - ${o.nome}</option>`).join('');
+
+    const meMaq = document.getElementById('edit-f-codmaq');
+    if (meMaq) meMaq.innerHTML = '<option value="">Selecione</option>' + STATE.maquinas.map(m => `<option value="${m.cod}">${m.cod} - ${m.nome}</option>`).join('');
+
+    const meSetor = document.getElementById('edit-f-codsetor');
+    if (meSetor) meSetor.innerHTML = '<option value="">Selecione</option>' + STATE.setores.map(s => `<option value="${s.cod}">${s.cod} - ${s.descricao}</option>`).join('');
+
+    const meEmpresa = document.getElementById('edit-f-empresa');
+    if (meEmpresa) meEmpresa.innerHTML = '<option value="">Selecione</option>' + STATE.empresas.map(e => `<option value="${e.cod}">${e.cod} - ${e.descricao}</option>`).join('');
   } catch (err) {
     showToast('Erro ao carregar configurações de campo', 'err');
   }
@@ -118,13 +127,13 @@ function toggleTheme() {
 function setPage(p) {
   document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(nv => nv.classList.remove('active'));
-  
+
   const page = document.getElementById('page-' + p);
   if (page) page.classList.add('active');
-  
+
   const nav = document.getElementById('nav-' + p);
   if (nav) nav.classList.add('active');
-  
+
   document.getElementById('page-title').textContent = {
     dashboard: 'Dashboard Operacional',
     digitador: 'Digitador',
@@ -174,96 +183,240 @@ function renderDatabase() {
       <td>${r.cod_maq}</td>
       <td>${r.cod_peca || '-'}</td>
       <td>${r.qtd || 0}</td>
-      <td>${r.tipo_registro === 'PRODUCAO' ? (r.eficiencia ? r.eficiencia.toFixed(1)+'%' : '-') : '-'}</td>
+      <td>${r.tipo_registro === 'PRODUCAO' ? (r.eficiencia ? r.eficiencia.toFixed(1) + '%' : '-') : '-'}</td>
       <td><span class="status-badge ${getStatusClass(r.eficiencia)}">${r.tipo_registro}</span></td>
       <td>${canDelete ? `<button class="btn btn-warning btn-sm" onclick="editRegistro('${r.id}')" style="margin-right:5px;background:transparent;border:none;cursor:pointer;font-size:14px;" title="Editar">✏️</button><button class="btn btn-danger btn-sm" data-rbac="delete-btn" onclick="delRegistro('${r.id}')">Excluir</button>` : '<span style="color:var(--text-muted);font-size:12px;">—</span>'}</td>
     </tr>
   `).join('');
 }
 
+// ───────── LÓGICA DO NOVO MODAL DE EDIÇÃO ─────────
+
 async function editRegistro(id) {
   const r = STATE.registros.find(x => x.id === id);
   if (!r) return;
+
+  // 1. Identificar o contexto do turno (Agrupamento lógico)
+  const contexto = STATE.registros.filter(x => 
+    x.data === r.data && 
+    x.turno === r.turno && 
+    x.cod_oper === r.cod_oper && 
+    x.cod_maq === r.cod_maq
+  );
+
+  // 2. Preencher Cabeçalho
+  document.getElementById('edit-reg-id').value = id; // Mantemos o ID original como referência
+  document.getElementById('edit-f-data').value = r.data ? r.data.substring(0, 10) : '';
+  document.getElementById('edit-f-mes').value = r.mes || '';
+  document.getElementById('edit-f-turno').value = r.turno || 'D';
+  document.getElementById('edit-f-codoper').value = r.cod_oper || '';
+  document.getElementById('edit-f-codmaq').value = r.cod_maq || '';
+  document.getElementById('edit-f-codsetor').value = r.cod_setor || '';
+  document.getElementById('edit-f-empresa').value = r.cod_empresa || '';
+  document.getElementById('edit-f-hprog').value = r.h_programada || 8.8;
+
+  // 3. Limpar e Preencher Tabelas
+  const pecasBody = document.getElementById('edit-pecas-body');
+  const paradasBody = document.getElementById('edit-paradas-body');
+  const obsField = document.getElementById('edit-f-obs');
   
-  // Preenche os dados comuns
-  document.getElementById('edit-reg-id').value = r.id;
-  document.getElementById('edit-reg-tipo').value = r.tipo_registro;
-  document.getElementById('edit-reg-data').value = r.data ? r.data.substring(0, 10) : '';
-  document.getElementById('edit-reg-turno').value = r.turno || '1';
-  document.getElementById('edit-reg-oper').value = r.cod_oper || '';
-  document.getElementById('edit-reg-maq').value = r.cod_maq || '';
+  pecasBody.innerHTML = '';
+  paradasBody.innerHTML = '';
+  obsField.value = '';
 
-  // Configura visibilidade e preenche de acordo com o tipo
-  if (r.tipo_registro === 'PRODUCAO') {
-    document.getElementById('edit-prod-fields').style.display = 'block';
-    document.getElementById('edit-parada-fields').style.display = 'none';
-    
-    document.getElementById('edit-reg-peca').value = r.cod_peca || '';
-    document.getElementById('edit-reg-qtd').value = r.qtd || 0;
-    document.getElementById('edit-reg-classe').value = r.classe_equipamento || '';
-  } else {
-    document.getElementById('edit-prod-fields').style.display = 'none';
-    document.getElementById('edit-parada-fields').style.display = 'block';
-    
-    document.getElementById('edit-reg-codparada').value = r.cod_parada || '';
-    document.getElementById('edit-reg-tipoparada').value = r.tipo_parada || 'PROG';
-    document.getElementById('edit-reg-hparada').value = r.h_parada || 0;
-    document.getElementById('edit-reg-descparada').value = r.desc_parada || '';
-  }
+  contexto.forEach(item => {
+    if (item.tipo_registro === 'PRODUCAO') {
+      addEditPecaRow(item);
+    } else if (item.tipo_registro === 'PARADA') {
+      addEditParadaRow(item);
+    } else if (item.tipo_registro === 'OBSERVACAO') {
+      obsField.value += (obsField.value ? '\n' : '') + (item.desc_parada || '');
+    }
+  });
 
-  // Mostra o modal
+  // Se não houver linhas, adiciona uma vazia para UX
+  if (pecasBody.children.length === 0) addEditPecaRow();
+  if (paradasBody.children.length === 0) addEditParadaRow();
+
+  calcEditResumo();
+
+  // 4. Mostrar o modal
   document.getElementById('modal-edit-registro').classList.add('active');
+}
+
+function addEditPecaRow(data = null) {
+  const tbody = document.getElementById('edit-pecas-body');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input type="text" value="${data?.cod_peca || ''}" class="peca-cod mono"></td>
+    <td><input type="number" value="${data?.qtd || 0}" class="peca-qtd mono" oninput="calcEditResumo()"></td>
+    <td><input type="number" value="${data?.tp_padrao || 0}" step="0.01" class="peca-padrao mono" oninput="calcEditResumo()"></td>
+    <td class="row-hprod mono">${(data?.h_produtiva || 0).toFixed(4)}</td>
+    <td class="row-efic mono" style="font-weight:bold;">${(data?.eficiencia || 0).toFixed(1)}%</td>
+    <td><button class="btn-del" onclick="this.parentElement.parentElement.remove(); calcEditResumo();">×</button></td>
+  `;
+  tbody.appendChild(tr);
+}
+
+function addEditParadaRow(data = null) {
+  const tbody = document.getElementById('edit-paradas-body');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td>
+      <select class="parada-cod mono" onchange="fillEditParadaRow(this)">
+        <option value="">-</option>
+        ${STATE.paradas.map(p => `<option value="${p.cod}" ${data?.cod_parada === p.cod ? 'selected' : ''}>${p.cod}</option>`).join('')}
+      </select>
+    </td>
+    <td><input type="text" value="${data?.desc_parada || ''}" class="parada-desc" readonly></td>
+    <td><input type="number" value="${data?.h_parada || 0}" step="0.01" class="parada-horas mono" oninput="calcEditResumo()"></td>
+    <td><input type="text" value="${data?.tipo_parada || ''}" class="parada-tipo" readonly></td>
+    <td><button class="btn-del" onclick="this.parentElement.parentElement.remove(); calcEditResumo();">×</button></td>
+  `;
+  tbody.appendChild(tr);
+}
+
+function fillEditParadaRow(el) {
+  const tr = el.parentElement.parentElement;
+  const p = STATE.paradas.find(x => x.cod === el.value);
+  tr.querySelector('.parada-desc').value = p ? p.descricao : '';
+  tr.querySelector('.parada-tipo').value = p ? p.tipo : '';
+  calcEditResumo();
+}
+
+function calcEditResumo() {
+  const hProg = parseFloat(document.getElementById('edit-f-hprog').value) || 0;
+  
+  let totalHPar = 0;
+  document.querySelectorAll('#edit-paradas-body tr').forEach(tr => {
+    totalHPar += parseFloat(tr.querySelector('.parada-horas').value) || 0;
+  });
+
+  const hTrab = Math.max(0, hProg - totalHPar);
+
+  document.querySelectorAll('#edit-pecas-body tr').forEach(tr => {
+    const qtd = parseFloat(tr.querySelector('.peca-qtd').value) || 0;
+    const pad = parseFloat(tr.querySelector('.peca-padrao').value) || 0;
+    const hProd = pad > 0 ? qtd / pad : 0;
+    const efic = hTrab > 0 ? (hProd / hTrab) * 100 : 0;
+    
+    tr.querySelector('.row-hprod').textContent = hProd.toFixed(4);
+    const eficEl = tr.querySelector('.row-efic');
+    eficEl.textContent = efic.toFixed(1) + '%';
+    eficEl.style.color = efic >= 95 ? 'var(--accent)' : (efic >= 80 ? 'var(--warn)' : 'var(--danger)');
+  });
+}
+
+function updateEditMonth() {
+  const dateStr = document.getElementById('edit-f-data').value;
+  if (dateStr) {
+    const d = new Date(dateStr);
+    document.getElementById('edit-f-mes').value = d.getUTCMonth() + 1;
+  }
+}
+
+function fillEditOper() {
+  // Opcional: Atualizar alguma label se existir
+}
+
+function fillEditMaq() {
+  // Opcional: Atualizar alguma label se existir
 }
 
 function closeEditModal() {
   document.getElementById('modal-edit-registro').classList.remove('active');
 }
 
-async function saveEditRegistro() {
-  const id = document.getElementById('edit-reg-id').value;
-  const tipo = document.getElementById('edit-reg-tipo').value;
-  const r = STATE.registros.find(x => x.id === id);
-  if (!r) return;
+async function handleUpdate() {
+  const idRef = document.getElementById('edit-reg-id').value;
+  const original = STATE.registros.find(x => x.id === idRef);
+  if (!original) return;
 
-  const payload = {
-    data: document.getElementById('edit-reg-data').value,
-    turno: document.getElementById('edit-reg-turno').value,
-    cod_oper: document.getElementById('edit-reg-oper').value.toUpperCase(),
-    cod_maq: document.getElementById('edit-reg-maq').value.toUpperCase()
+  showToast('Sincronizando alterações...', 'ok');
+
+  // 1. Coletar dados do cabeçalho
+  const base = {
+    data: document.getElementById('edit-f-data').value,
+    mes: parseInt(document.getElementById('edit-f-mes').value),
+    turno: document.getElementById('edit-f-turno').value,
+    cod_oper: document.getElementById('edit-f-codoper').value,
+    cod_maq: document.getElementById('edit-f-codmaq').value,
+    cod_setor: document.getElementById('edit-f-codsetor').value,
+    cod_empresa: document.getElementById('edit-f-empresa').value,
+    h_programada: parseFloat(document.getElementById('edit-f-hprog').value) || 0
   };
 
-  if (tipo === 'PRODUCAO') {
-    payload.cod_peca = document.getElementById('edit-reg-peca').value.toUpperCase();
-    payload.qtd = parseFloat(document.getElementById('edit-reg-qtd').value) || 0;
-    payload.classe_equipamento = document.getElementById('edit-reg-classe').value.toUpperCase();
-    
-    // Recalcular horas produtivas e eficiência
-    if (r.tp_padrao > 0) {
-       payload.h_produtiva = payload.qtd / r.tp_padrao;
-       if (r.h_programada > 0) {
-          payload.eficiencia = (payload.h_produtiva / r.h_programada) * 100;
-       }
-    }
-  } else {
-    payload.cod_parada = document.getElementById('edit-reg-codparada').value.toUpperCase();
-    payload.tipo_parada = document.getElementById('edit-reg-tipoparada').value;
-    payload.h_parada = parseFloat(document.getElementById('edit-reg-hparada').value) || 0;
-    payload.desc_parada = document.getElementById('edit-reg-descparada').value;
+  // Nomes de descrição (busca no STATE)
+  base.desc_oper = STATE.operadores.find(o => o.cod === base.cod_oper)?.nome || '';
+  base.desc_maq = STATE.maquinas.find(m => m.cod === base.cod_maq)?.nome || '';
+  base.desc_setor = STATE.setores.find(s => s.cod === base.cod_setor)?.descricao || '';
+  base.desc_empresa = STATE.empresas.find(e => e.cod === base.cod_empresa)?.descricao || '';
+
+  // 2. Coletar linhas
+  const hProg = base.h_programada;
+  let totalHPar = 0;
+  const paradas = [];
+  document.querySelectorAll('#edit-paradas-body tr').forEach(tr => {
+    const h = parseFloat(tr.querySelector('.parada-horas').value) || 0;
+    totalHPar += h;
+    paradas.push({
+      ...base,
+      cod_parada: tr.querySelector('.parada-cod').value,
+      desc_parada: tr.querySelector('.parada-desc').value,
+      h_parada: h,
+      tipo_parada: tr.querySelector('.parada-tipo').value,
+      tipo_registro: 'PARADA'
+    });
+  });
+
+  const hTrab = Math.max(0, hProg - totalHPar);
+  const pecas = [];
+  document.querySelectorAll('#edit-pecas-body tr').forEach(tr => {
+    const qtd = parseFloat(tr.querySelector('.peca-qtd').value) || 0;
+    const pad = parseFloat(tr.querySelector('.peca-padrao').value) || 0;
+    const hProd = pad > 0 ? qtd / pad : 0;
+    pecas.push({
+      ...base,
+      cod_peca: tr.querySelector('.peca-cod').value,
+      qtd: qtd,
+      tp_padrao: pad,
+      h_produtiva: hProd,
+      eficiencia: hTrab > 0 ? (hProd / hTrab) * 100 : 0,
+      tipo_registro: 'PRODUCAO'
+    });
+  });
+
+  const obs = document.getElementById('edit-f-obs').value.trim();
+  if (obs) {
+    pecas.push({ ...base, desc_parada: obs, tipo_registro: 'OBSERVACAO' });
   }
 
-  showToast('Salvando alterações...', 'ok');
-  
-  const { error } = await sb.from('registros_cronoanalise').update(payload).eq('id', id);
-  
-  if (!error) {
-    showToast('Registro atualizado com sucesso!', 'ok');
+  // 3. Operação de substituição no Supabase
+  // Deletar registros antigos do mesmo contexto
+  const { error: delError } = await sb.from('registros_cronoanalise')
+    .delete()
+    .eq('data', original.data)
+    .eq('turno', original.turno)
+    .eq('cod_oper', original.cod_oper)
+    .eq('cod_maq', original.cod_maq);
+
+  if (delError) {
+    showToast('Erro ao remover registros antigos: ' + delError.message, 'err');
+    return;
+  }
+
+  // Inserir novos registros
+  const allNew = [...pecas, ...paradas];
+  const { error: insError } = await sb.from('registros_cronoanalise').insert(allNew);
+
+  if (insError) {
+    showToast('Erro ao salvar novos dados: ' + insError.message, 'err');
+  } else {
+    showToast('Turno atualizado com sucesso!', 'ok');
     closeEditModal();
     await loadData();
     renderAll();
-    if (document.getElementById('page-banco')?.classList.contains('active')) renderDatabase();
-    if (document.getElementById('page-particular')?.classList.contains('active')) renderParticular();
-  } else {
-    showToast('Erro ao atualizar: ' + error.message, 'err');
+    if (document.getElementById('page-banco').classList.contains('active')) renderDatabase();
   }
 }
 
@@ -305,9 +458,9 @@ let charts = { tipo: null, motivos: null };
 function renderParadas() {
   const paradas = STATE.registros.filter(r => r.tipo_registro === 'PARADA');
   const tbody = document.getElementById('paradas-detail-body');
-  
+
   if (tbody) {
-    tbody.innerHTML = paradas.length === 0 
+    tbody.innerHTML = paradas.length === 0
       ? '<tr><td colspan="4" style="text-align:center; padding:20px;">Nenhuma parada registrada.</td></tr>'
       : paradas.map(p => `
       <tr>
@@ -322,12 +475,12 @@ function renderParadas() {
   // Processar gráficos de paradas
   const ctxTipo = document.getElementById('chart-tipo');
   const ctxMot = document.getElementById('chart-motivos');
-  
+
   if (!ctxTipo || !ctxMot) return;
 
   // Agrupamento por tipo de parada
-  const prog = paradas.filter(p => p.tipo_parada === 'PROG').reduce((s,p) => s + (p.h_parada || 0), 0);
-  const nprog = paradas.filter(p => p.tipo_parada === 'NÃO PROG').reduce((s,p) => s + (p.h_parada || 0), 0);
+  const prog = paradas.filter(p => p.tipo_parada === 'PROG').reduce((s, p) => s + (p.h_parada || 0), 0);
+  const nprog = paradas.filter(p => p.tipo_parada === 'NÃO PROG').reduce((s, p) => s + (p.h_parada || 0), 0);
 
   if (charts.tipo) charts.tipo.destroy();
   charts.tipo = new Chart(ctxTipo, {
@@ -353,7 +506,7 @@ function renderParadas() {
     const key = p.desc_parada || 'Não informado';
     motMap[key] = (motMap[key] || 0) + (p.h_parada || 0);
   });
-  const sortedMot = Object.entries(motMap).sort((a,b) => b[1] - a[1]).slice(0, 5);
+  const sortedMot = Object.entries(motMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
   if (charts.motivos) charts.motivos.destroy();
   charts.motivos = new Chart(ctxMot, {
@@ -480,8 +633,8 @@ async function addConfig(type) {
     payload = { cod: document.getElementById('new-maq-cod').value, nome: document.getElementById('new-maq-nome').value.toUpperCase() };
   } else if (type === 'par') {
     table = 'paradas_motivos';
-    payload = { 
-      cod: document.getElementById('new-par-cod').value, 
+    payload = {
+      cod: document.getElementById('new-par-cod').value,
       descricao: document.getElementById('new-par-desc').value.toUpperCase(),
       tipo: document.getElementById('new-par-tipo').value
     };
@@ -514,18 +667,18 @@ async function addConfig(type) {
     await loadConfig();
     renderConfigTable();
     // Limpar campos do formulário
-    if (type === 'oper') { document.getElementById('new-oper-cod').value=''; document.getElementById('new-oper-nome').value=''; }
-    if (type === 'maq') { document.getElementById('new-maq-cod').value=''; document.getElementById('new-maq-nome').value=''; }
-    if (type === 'par') { document.getElementById('new-par-cod').value=''; document.getElementById('new-par-desc').value=''; }
-    if (type === 'set') { document.getElementById('new-set-cod').value=''; document.getElementById('new-set-desc').value=''; document.getElementById('new-set-meta').value=''; }
-    if (type === 'emp') { document.getElementById('new-emp-cod').value=''; document.getElementById('new-emp-desc').value=''; }
+    if (type === 'oper') { document.getElementById('new-oper-cod').value = ''; document.getElementById('new-oper-nome').value = ''; }
+    if (type === 'maq') { document.getElementById('new-maq-cod').value = ''; document.getElementById('new-maq-nome').value = ''; }
+    if (type === 'par') { document.getElementById('new-par-cod').value = ''; document.getElementById('new-par-desc').value = ''; }
+    if (type === 'set') { document.getElementById('new-set-cod').value = ''; document.getElementById('new-set-desc').value = ''; document.getElementById('new-set-meta').value = ''; }
+    if (type === 'emp') { document.getElementById('new-emp-cod').value = ''; document.getElementById('new-emp-desc').value = ''; }
   }
 }
 
 async function removeConfig(table, id) {
   if (!confirm('Deseja realmente remover esta configuração?')) return;
   const { error, count } = await sb.from(table).delete({ count: 'exact' }).eq('id', id);
-  
+
   if (error) {
     showToast('Erro ao remover configuração', 'err');
   } else if (count === 0) {
@@ -587,7 +740,7 @@ function calcTurnHours() {
   if (start && end) {
     const s = start.split(':');
     const e = end.split(':');
-    const diff = (parseInt(e[0]) + parseInt(e[1])/60) - (parseInt(s[0]) + parseInt(s[1])/60);
+    const diff = (parseInt(e[0]) + parseInt(e[1]) / 60) - (parseInt(s[0]) + parseInt(s[1]) / 60);
     document.getElementById('f-hdisp').value = Math.max(0, diff).toFixed(2);
     calcResumo();
   }
@@ -745,7 +898,7 @@ async function saveRegisto() {
     // Auditoria de quem salvou
     created_by_name: (typeof AUTH !== 'undefined' && AUTH.name) ? AUTH.name : 'Sistema',
     created_by_role: (typeof AUTH !== 'undefined' && AUTH.role) ? AUTH.role : 'desconhecido',
-    created_by_uid:  (typeof AUTH !== 'undefined' && AUTH.user) ? AUTH.user.id : null
+    created_by_uid: (typeof AUTH !== 'undefined' && AUTH.user) ? AUTH.user.id : null
   };
 
   const records = [];
@@ -860,26 +1013,26 @@ function renderAll() {
   const totalHProd = pecas.reduce((sum, p) => sum + (parseFloat(p.h_produtiva) || 0), 0);
   const totalHDisp = filteredRecords.reduce((max, r) => Math.max(max, r.h_disponivel || 0), 0) || 8.8;
   const residual = Math.max(0, totalHDisp - totalHProd);
-  
+
   const recordsWithPattern = pecas.filter(r => r.tp_padrao > 0);
-  const avgEfic = recordsWithPattern.length > 0 ? 
+  const avgEfic = recordsWithPattern.length > 0 ?
     recordsWithPattern.reduce((sum, r) => sum + (r.eficiencia || 0), 0) / recordsWithPattern.length : 0;
-  
+
   document.getElementById('kpi-efic-global').textContent = avgEfic.toFixed(1) + '%';
   document.getElementById('kpi-qtd-total').textContent = totalProduced;
   document.getElementById('kpi-residual').textContent = residual.toFixed(2) + 'h';
-  
+
   const gargalosCount = STATE.registros.filter(r => r.tipo_registro === 'PRODUCAO' && (r.eficiencia || 0) < 80).length;
   document.getElementById('kpi-gargalos').textContent = gargalosCount;
 
   // Regra 4: Resumo Executivo
   const parecer = document.getElementById('parecer-consultivo');
-  const worst = [...STATE.registros].filter(r => r.tp_padrao > 0).sort((a,b) => a.eficiencia - b.eficiencia)[0];
-  
+  const worst = [...STATE.registros].filter(r => r.tp_padrao > 0).sort((a, b) => a.eficiencia - b.eficiencia)[0];
+
   if (worst) {
     const status = avgEfic >= 95 ? '[DENTRO DO PADRÃO]' : (avgEfic >= 80 ? '[DESVIO MODERADO]' : '[GARGALO CRÍTICO]');
     const color = avgEfic >= 95 ? 'var(--success)' : (avgEfic >= 80 ? 'var(--warn)' : 'var(--danger)');
-    
+
     parecer.innerHTML = `
       <p style="font-weight:600; color:${color}; margin-bottom:12px;">${status} - Saúde do processo operacional em ${(avgEfic).toFixed(1)}% de eficiência.</p>
       <div style="font-size:13px; border-left:3px solid ${color}; padding-left:12px;">
@@ -955,20 +1108,20 @@ function exportCSV() {
 }
 
 async function simulateData() {
-  const opers = STATE.operadores.length > 0 ? STATE.operadores : [{cod:'OP01', nome:'João Silva'}];
-  const maqs = STATE.maquinas.length > 0 ? STATE.maquinas : [{cod:'MQ01', nome:'Prensa'}];
-  const motives = STATE.paradas.length > 0 ? STATE.paradas : [{cod:'P01', descricao:'Manutenção', tipo:'PROG'}];
-  
+  const opers = STATE.operadores.length > 0 ? STATE.operadores : [{ cod: 'OP01', nome: 'João Silva' }];
+  const maqs = STATE.maquinas.length > 0 ? STATE.maquinas : [{ cod: 'MQ01', nome: 'Prensa' }];
+  const motives = STATE.paradas.length > 0 ? STATE.paradas : [{ cod: 'P01', descricao: 'Manutenção', tipo: 'PROG' }];
+
   const records = [];
   const today = new Date().toISOString().split('T')[0];
-  
+
   // 10 Paradas simuladas
-  for(let i=0; i<10; i++) {
+  for (let i = 0; i < 10; i++) {
     const op = opers[Math.floor(Math.random() * opers.length)];
     const mq = maqs[Math.floor(Math.random() * maqs.length)];
     const mot = motives[Math.floor(Math.random() * motives.length)];
     const duration = (Math.random() * 1.2 + 0.1).toFixed(2);
-    
+
     records.push({
       data: today, turno: 'D', cod_oper: op.cod, desc_oper: op.nome,
       cod_maq: mq.cod, desc_maq: mq.nome, tipo_registro: 'PARADA',
@@ -981,7 +1134,7 @@ async function simulateData() {
 
   // 5 Produções
   const pecas = ['3185', '4200', '1150', '2290', '5000'];
-  for(let i=0; i<5; i++) {
+  for (let i = 0; i < 5; i++) {
     const op = opers[Math.floor(Math.random() * opers.length)];
     const mq = maqs[Math.floor(Math.random() * maqs.length)];
     const peca = pecas[i];
@@ -994,13 +1147,13 @@ async function simulateData() {
       cod_maq: mq.cod, desc_maq: mq.nome, tipo_registro: 'PRODUCAO',
       cod_parada: '-', desc_parada: '-', h_parada: 0,
       h_inicio: '07:30', h_fim: '17:18', h_disponivel: 9.8, h_programada: 8.8,
-      cod_peca: peca, qtd: qtd, tp_padrao: parseFloat(tp), h_produtiva: parseFloat(hProd), 
+      cod_peca: peca, qtd: qtd, tp_padrao: parseFloat(tp), h_produtiva: parseFloat(hProd),
       mes: 5, eficiencia: (Math.random() * 20 + 80).toFixed(1)
     });
   }
-  
+
   const { error } = await sb.from('registros_cronoanalise').insert(records);
-  if(!error) {
+  if (!error) {
     showToast('Dados simulados com sucesso!');
     await loadData();
     renderAll();
@@ -1033,19 +1186,19 @@ let chartParticular = null;
 function renderParticular() {
   const codOper = document.getElementById('particular-oper')?.value;
   const content = document.getElementById('particular-content');
-  const empty   = document.getElementById('particular-empty');
+  const empty = document.getElementById('particular-empty');
 
   if (!codOper) {
     if (content) content.style.display = 'none';
-    if (empty)   empty.style.display   = 'block';
+    if (empty) empty.style.display = 'block';
     return;
   }
 
   if (content) content.style.display = 'block';
-  if (empty)   empty.style.display   = 'none';
+  if (empty) empty.style.display = 'none';
 
   const operData = STATE.operadores.find(o => o.cod === codOper);
-  const records  = STATE.registros.filter(r => r.cod_oper === codOper && r.tipo_registro === 'PRODUCAO');
+  const records = STATE.registros.filter(r => r.cod_oper === codOper && r.tipo_registro === 'PRODUCAO');
 
   // Meta vem do setor do operador — usa o setor do primeiro registro encontrado
   const codSetor = records.length > 0 ? records[0].cod_setor : null;
@@ -1061,13 +1214,13 @@ function renderParticular() {
   });
 
   const totalHTrab = records.reduce((s, r) => s + (r.h_produtiva || 0), 0);
-  const avgEfic    = records.length > 0
+  const avgEfic = records.length > 0
     ? records.reduce((s, r) => s + (r.eficiencia || 0), 0) / records.length : 0;
 
   document.getElementById('part-hprog').textContent = totalHProg.toFixed(2) + 'h';
   document.getElementById('part-htrab').textContent = totalHTrab.toFixed(4) + 'h';
-  document.getElementById('part-meta').textContent  = meta + '%';
-  document.getElementById('part-efic').textContent  = avgEfic.toFixed(1) + '%';
+  document.getElementById('part-meta').textContent = meta + '%';
+  document.getElementById('part-efic').textContent = avgEfic.toFixed(1) + '%';
 
   const eficCard = document.getElementById('part-efic-card');
   if (eficCard) {
@@ -1083,8 +1236,8 @@ function renderParticular() {
   records.forEach(r => {
     const k = r.cod_peca || 'N/A';
     if (!pm[k]) pm[k] = { cod_peca: k, qtd: 0, kwa: 0, efic_sum: 0, count: 0, classe: r.classe_equipamento || '-', maq: r.cod_maq || '-' };
-    pm[k].qtd      += r.qtd || 0;
-    pm[k].kwa      += r.kwa_total || 0;
+    pm[k].qtd += r.qtd || 0;
+    pm[k].kwa += r.kwa_total || 0;
     pm[k].efic_sum += r.eficiencia || 0;
     pm[k].count++;
   });
@@ -1095,9 +1248,9 @@ function renderParticular() {
     tbody.innerHTML = projects.length === 0
       ? '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--muted);">Nenhum projeto registrado para este profissional.</td></tr>'
       : projects.map(p => {
-          const kwaM  = p.qtd > 0 ? (p.kwa / p.qtd) : 0;
-          const eficP = p.count > 0 ? p.efic_sum / p.count : 0;
-          return `<tr>
+        const kwaM = p.qtd > 0 ? (p.kwa / p.qtd) : 0;
+        const eficP = p.count > 0 ? p.efic_sum / p.count : 0;
+        return `<tr>
             <td><strong>${p.cod_peca}</strong></td>
             <td>${p.qtd}</td>
             <td>${p.kwa.toFixed(3)}</td>
@@ -1106,13 +1259,13 @@ function renderParticular() {
             <td>${p.maq}</td>
             <td><span class="status-badge ${getStatusClass(eficP)}">${eficP.toFixed(1)}%</span></td>
           </tr>`;
-        }).join('');
+      }).join('');
   }
 
   // Renderizar Observações do Profissional
   const obsBody = document.getElementById('part-obs-body');
   const obsRecords = STATE.registros.filter(r => r.cod_oper === codOper && r.tipo_registro === 'OBSERVACAO');
-  
+
   if (obsBody) {
     if (obsRecords.length === 0) {
       obsBody.innerHTML = '<em style="color:var(--muted);font-size:13px;">Nenhuma observação registrada para este profissional.</em>';
@@ -1249,11 +1402,11 @@ window.fillSetor = fillSetor;
 window.fillParadaRow = fillParadaRow;
 window.updateParadaDesc = updateParadaDesc;
 window.renderParticular = renderParticular;
-window.renderAuditoria  = renderAuditoria;
-window.editConfig       = editConfig;
-window.editRegistro     = editRegistro;
-window.editObs          = editObs;
-window.closeEditModal   = closeEditModal;
+window.renderAuditoria = renderAuditoria;
+window.editConfig = editConfig;
+window.editRegistro = editRegistro;
+window.editObs = editObs;
+window.closeEditModal = closeEditModal;
 window.saveEditRegistro = saveEditRegistro;
 
 console.log('SOMA: Sistema inicializado com sucesso. v2.2 — RBAC ativo.');

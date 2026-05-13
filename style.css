@@ -1,24 +1,24 @@
 :root {
-  /* PREMIUM INDUSTRIAL DARK THEME */
-  --bg: #080a0f;
-  --surface: #11141d;
-  --card: #1a1e29;
-  --card-hover: #232836;
-  --input-bg: #0d1117;
-  --border: rgba(255, 255, 255, 0.08);
-  --accent: #00f2c3; /* Cyan-Green */
-  --accent-glow: rgba(0, 242, 195, 0.2);
-  --accent2: #ff8d72; /* Coral */
+  /* PREMIUM INDUSTRIAL DARK THEME - SOMA SPECIAL */
+  --bg: #0f111a;
+  --surface: #131620;
+  --card: #161922;
+  --card-hover: #1c202d;
+  --input-bg: #0b0d14;
+  --border: rgba(255, 255, 255, 0.05);
+  --accent: #00ffcc; /* Neon Cyan */
+  --accent-glow: rgba(0, 255, 204, 0.15);
+  --accent2: #ff4d6d; /* Pink/Coral Alert */
   --accent3: #4d94ff; /* Tech Blue */
-  --text: #ffffff;
-  --text-muted: #8b949e;
+  --text: #e1e1e6;
+  --text-muted: #7c7c8a;
   --danger: #ff4d6d;
-  --success: #00f2c3;
+  --success: #00ffcc;
   --warn: #ffb444;
   --font-mono: 'Space Mono', monospace;
   --font-body: 'Inter', sans-serif;
-  --glass: rgba(26, 30, 41, 0.7);
-  --shadow: rgba(0,0,0,0.3);
+  --glass: rgba(15, 17, 26, 0.8);
+  --shadow: rgba(0, 0, 0, 0.4);
 }
 
 body.light-theme {
@@ -220,10 +220,46 @@ input:focus, select:focus {
 }
 .modal-bg.active { display: flex; }
 .modal {
-  background: var(--surface); border: 1px solid var(--border);
-  padding: 40px; border-radius: 24px; width: 440px; max-width: 90%;
-  box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 32px;
+  border-radius: 24px;
+  width: 480px;
+  max-width: 95%;
+  box-shadow: 0 25px 80px rgba(0,0,0,0.7);
+  position: relative;
+  overflow-y: auto;
+  max-height: 90vh;
 }
+
+.modal-large {
+  width: 1100px;
+  max-width: 95%;
+  padding: 40px;
+}
+
+.modal-close {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  font-size: 20px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: 0.2s;
+  background: rgba(255,255,255,0.05);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+.modal-close:hover { color: var(--danger); background: rgba(255, 77, 109, 0.1); }
+
+.mono { font-family: var(--font-mono); }
+.text-accent { color: var(--accent); }
+.text-danger { color: var(--danger); }
+
 
 /* DIGITADOR SPECIFIC */
 .res-item { background: var(--input-bg); padding: 15px; border-radius: 15px; border: 1px solid var(--border); }
