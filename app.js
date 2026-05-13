@@ -184,49 +184,86 @@ function renderDatabase() {
 async function editRegistro(id) {
   const r = STATE.registros.find(x => x.id === id);
   if (!r) return;
-  const opt = prompt(`O que deseja alterar em ${r.tipo_registro}?
-1 - Código (Peça ou Parada)
-2 - Valor (Quantidade ou Horas)
-3 - Observação / Título da Parada`, '1');
   
-  if (!opt) return;
+  // Preenche os dados comuns
+  document.getElementById('edit-reg-id').value = r.id;
+  document.getElementById('edit-reg-tipo').value = r.tipo_registro;
+  document.getElementById('edit-reg-data').value = r.data ? r.data.substring(0, 10) : '';
+  document.getElementById('edit-reg-turno').value = r.turno || '1';
+  document.getElementById('edit-reg-oper').value = r.cod_oper || '';
+  document.getElementById('edit-reg-maq').value = r.cod_maq || '';
 
-  let field, val;
-  if (opt === '1') {
-    field = r.tipo_registro === 'PRODUCAO' ? 'cod_peca' : 'cod_parada';
-    val = prompt(`Novo código:`, r[field]);
-    if (val) val = val.toUpperCase();
-  } else if (opt === '2') {
-    field = r.tipo_registro === 'PRODUCAO' ? 'qtd' : 'h_parada';
-    val = prompt(`Novo valor para ${field}:`, r[field]);
-    if (val !== null) val = parseFloat(val);
-  } else if (opt === '3') {
-    field = r.tipo_registro === 'PRODUCAO' ? 'classe_equipamento' : 'desc_parada';
-    val = prompt(`Nova descrição / observação / classe:`, r[field]);
+  // Configura visibilidade e preenche de acordo com o tipo
+  if (r.tipo_registro === 'PRODUCAO') {
+    document.getElementById('edit-prod-fields').style.display = 'block';
+    document.getElementById('edit-parada-fields').style.display = 'none';
+    
+    document.getElementById('edit-reg-peca').value = r.cod_peca || '';
+    document.getElementById('edit-reg-qtd').value = r.qtd || 0;
+    document.getElementById('edit-reg-classe').value = r.classe_equipamento || '';
+  } else {
+    document.getElementById('edit-prod-fields').style.display = 'none';
+    document.getElementById('edit-parada-fields').style.display = 'block';
+    
+    document.getElementById('edit-reg-codparada').value = r.cod_parada || '';
+    document.getElementById('edit-reg-tipoparada').value = r.tipo_parada || 'PROG';
+    document.getElementById('edit-reg-hparada').value = r.h_parada || 0;
+    document.getElementById('edit-reg-descparada').value = r.desc_parada || '';
   }
 
-  if (field && val !== null && !isNaN(val) || (field && val !== null && isNaN(val))) {
-    const payload = { [field]: val };
+  // Mostra o modal
+  document.getElementById('modal-edit-registro').classList.add('active');
+}
+
+function closeEditModal() {
+  document.getElementById('modal-edit-registro').classList.remove('active');
+}
+
+async function saveEditRegistro() {
+  const id = document.getElementById('edit-reg-id').value;
+  const tipo = document.getElementById('edit-reg-tipo').value;
+  const r = STATE.registros.find(x => x.id === id);
+  if (!r) return;
+
+  const payload = {
+    data: document.getElementById('edit-reg-data').value,
+    turno: document.getElementById('edit-reg-turno').value,
+    cod_oper: document.getElementById('edit-reg-oper').value.toUpperCase(),
+    cod_maq: document.getElementById('edit-reg-maq').value.toUpperCase()
+  };
+
+  if (tipo === 'PRODUCAO') {
+    payload.cod_peca = document.getElementById('edit-reg-peca').value.toUpperCase();
+    payload.qtd = parseFloat(document.getElementById('edit-reg-qtd').value) || 0;
+    payload.classe_equipamento = document.getElementById('edit-reg-classe').value.toUpperCase();
     
-    // Recalcular horas produtivas e eficiência se for PRODUCÃO e mudar qtd
-    if (r.tipo_registro === 'PRODUCAO' && field === 'qtd') {
-       const hProd = r.tp_padrao > 0 ? val / r.tp_padrao : 0;
-       payload.h_produtiva = hProd;
+    // Recalcular horas produtivas e eficiência
+    if (r.tp_padrao > 0) {
+       payload.h_produtiva = payload.qtd / r.tp_padrao;
        if (r.h_programada > 0) {
-          payload.eficiencia = (hProd / r.h_programada) * 100;
+          payload.eficiencia = (payload.h_produtiva / r.h_programada) * 100;
        }
     }
+  } else {
+    payload.cod_parada = document.getElementById('edit-reg-codparada').value.toUpperCase();
+    payload.tipo_parada = document.getElementById('edit-reg-tipoparada').value;
+    payload.h_parada = parseFloat(document.getElementById('edit-reg-hparada').value) || 0;
+    payload.desc_parada = document.getElementById('edit-reg-descparada').value;
+  }
 
-    const { error } = await sb.from('registros_cronoanalise').update(payload).eq('id', id);
-    if (!error) {
-      showToast('Registro alterado!', 'ok');
-      await loadData();
-      renderAll();
-      if (document.getElementById('page-banco')?.classList.contains('active')) renderDatabase();
-      if (document.getElementById('page-particular')?.classList.contains('active')) renderParticular();
-    } else {
-      showToast('Erro ao alterar: ' + error.message, 'err');
-    }
+  showToast('Salvando alterações...', 'ok');
+  
+  const { error } = await sb.from('registros_cronoanalise').update(payload).eq('id', id);
+  
+  if (!error) {
+    showToast('Registro atualizado com sucesso!', 'ok');
+    closeEditModal();
+    await loadData();
+    renderAll();
+    if (document.getElementById('page-banco')?.classList.contains('active')) renderDatabase();
+    if (document.getElementById('page-particular')?.classList.contains('active')) renderParticular();
+  } else {
+    showToast('Erro ao atualizar: ' + error.message, 'err');
   }
 }
 
@@ -1216,5 +1253,7 @@ window.renderAuditoria  = renderAuditoria;
 window.editConfig       = editConfig;
 window.editRegistro     = editRegistro;
 window.editObs          = editObs;
+window.closeEditModal   = closeEditModal;
+window.saveEditRegistro = saveEditRegistro;
 
 console.log('SOMA: Sistema inicializado com sucesso. v2.2 — RBAC ativo.');
