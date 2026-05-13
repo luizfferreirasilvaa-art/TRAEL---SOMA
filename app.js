@@ -540,7 +540,14 @@ function renderParadas() {
   let paradas = STATE.registros.filter(r => r.tipo_registro === 'PARADA');
   
   if (fSetor) paradas = paradas.filter(r => r.cod_setor === fSetor);
-  if (fData) paradas = paradas.filter(r => r.data === fData);
+  if (fData) {
+    paradas = paradas.filter(r => {
+      if (!r.data) return false;
+      // Normaliza para YYYY-MM-DD para comparação precisa
+      const rDate = new Date(r.data).toISOString().split('T')[0];
+      return rDate === fData;
+    });
+  }
   if (fMot) paradas = paradas.filter(r => r.cod_parada === fMot);
   if (fTipo) paradas = paradas.filter(r => r.tipo_parada === fTipo);
 
