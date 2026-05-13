@@ -17,6 +17,28 @@ let STATE = {
   registros: []
 };
 
+// ───────── UTILITÁRIOS DE FORMATAÇÃO DE HORAS (HH:MM) ─────────
+function fmtHora(dec) {
+  if (dec === undefined || dec === null || isNaN(dec)) return "00:00";
+  const sign = dec < 0 ? "-" : "";
+  const abs = Math.abs(dec);
+  const h = Math.floor(abs);
+  const m = Math.round((abs - h) * 60);
+  return `${sign}${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+function parseHora(str) {
+  if (!str) return 0;
+  if (typeof str === 'number') return str;
+  if (str.includes(':')) {
+    const parts = str.split(':');
+    const h = parseInt(parts[0]) || 0;
+    const m = parseInt(parts[1]) || 0;
+    return h + (m / 60);
+  }
+  return parseFloat(str) || 0;
+}
+
 // ───────── INICIALIZAÇÃO ─────────
 window.onload = async () => {
   // 1. Verificar autenticação (redireciona para login.html se não logado)
@@ -228,7 +250,7 @@ async function editRegistro(id) {
   document.getElementById('edit-f-codmaq').value = r.cod_maq || '';
   document.getElementById('edit-f-codsetor').value = r.cod_setor || '';
   document.getElementById('edit-f-empresa').value = r.cod_empresa || '';
-  document.getElementById('edit-f-hprog').value = r.h_programada || 8.8;
+  document.getElementById('edit-f-hprog').value = fmtHora(r.h_programada || 8.8);
 
   // 3. Limpar e Preencher Tabelas
   const pecasBody = document.getElementById('edit-pecas-body');
@@ -266,7 +288,7 @@ function addEditPecaRow(data = null) {
     <td><input type="text" value="${data?.cod_peca || ''}" class="peca-cod mono"></td>
     <td><input type="number" value="${data?.qtd || 0}" class="peca-qtd mono" oninput="calcEditResumo()"></td>
     <td><input type="number" value="${data?.tp_padrao || 0}" step="0.01" class="peca-padrao mono" oninput="calcEditResumo()"></td>
-    <td class="row-hprod mono">${(data?.h_produtiva || 0).toFixed(4)}</td>
+    <td class="row-hprod mono">${fmtHora(data?.h_produtiva || 0)}</td>
     <td class="row-efic mono" style="font-weight:bold;">${(data?.eficiencia || 0).toFixed(1)}%</td>
     <td><button class="btn-del" onclick="this.parentElement.parentElement.remove(); calcEditResumo();">×</button></td>
   `;
@@ -284,7 +306,7 @@ function addEditParadaRow(data = null) {
       </select>
     </td>
     <td><input type="text" value="${data?.desc_parada || ''}" class="parada-desc" readonly></td>
-    <td><input type="number" value="${data?.h_parada || 0}" step="0.01" class="parada-horas mono" oninput="calcEditResumo()"></td>
+    <td><input type="text" value="${fmtHora(data?.h_parada || 0)}" class="parada-horas mono" oninput="calcEditResumo()" placeholder="HH:MM"></td>
     <td><input type="text" value="${data?.tipo_parada || ''}" class="parada-tipo" readonly></td>
     <td><button class="btn-del" onclick="this.parentElement.parentElement.remove(); calcEditResumo();">×</button></td>
   `;
@@ -300,11 +322,11 @@ function fillEditParadaRow(el) {
 }
 
 function calcEditResumo() {
-  const hProg = parseFloat(document.getElementById('edit-f-hprog').value) || 0;
+  const hProg = parseHora(document.getElementById('edit-f-hprog').value) || 0;
   
   let totalHPar = 0;
   document.querySelectorAll('#edit-paradas-body tr').forEach(tr => {
-    totalHPar += parseFloat(tr.querySelector('.parada-horas').value) || 0;
+    totalHPar += parseHora(tr.querySelector('.parada-horas').value) || 0;
   });
 
   const hTrab = Math.max(0, hProg - totalHPar);
@@ -315,7 +337,7 @@ function calcEditResumo() {
     const hProd = pad > 0 ? qtd / pad : 0;
     const efic = hTrab > 0 ? (hProd / hTrab) * 100 : 0;
     
-    tr.querySelector('.row-hprod').textContent = hProd.toFixed(4);
+    tr.querySelector('.row-hprod').textContent = fmtHora(hProd);
     const eficEl = tr.querySelector('.row-efic');
     eficEl.textContent = efic.toFixed(1) + '%';
     eficEl.style.color = efic >= 95 ? 'var(--accent)' : (efic >= 80 ? 'var(--warn)' : 'var(--danger)');
@@ -358,7 +380,7 @@ async function handleUpdate() {
     cod_maq: document.getElementById('edit-f-codmaq').value,
     cod_setor: document.getElementById('edit-f-codsetor').value,
     cod_empresa: document.getElementById('edit-f-empresa').value,
-    h_programada: parseFloat(document.getElementById('edit-f-hprog').value) || 0
+    h_programada: parseHora(document.getElementById('edit-f-hprog').value) || 0
   };
 
   // Nomes de descrição (busca no STATE)
@@ -372,7 +394,7 @@ async function handleUpdate() {
   let totalHPar = 0;
   const paradas = [];
   document.querySelectorAll('#edit-paradas-body tr').forEach(tr => {
-    const h = parseFloat(tr.querySelector('.parada-horas').value) || 0;
+    const h = parseHora(tr.querySelector('.parada-horas').value) || 0;
     totalHPar += h;
     paradas.push({
       ...base,
@@ -481,7 +503,7 @@ function renderParadas() {
       <tr>
         <td>${new Date(p.data).toLocaleDateString('pt-BR')}</td>
         <td><strong>${p.cod_parada}</strong> - ${p.desc_parada}</td>
-        <td>${(p.h_parada || 0).toFixed(2)}h</td>
+        <td>${fmtHora(p.h_parada || 0)}</td>
         <td><span class="status-badge ${p.tipo_parada === 'PROG' ? 'status-padrao' : 'status-gargalo'}">${p.tipo_parada}</span></td>
       </tr>
     `).join('');
@@ -829,7 +851,7 @@ function calcTurnHours() {
     const s = start.split(':');
     const e = end.split(':');
     const diff = (parseInt(e[0]) + parseInt(e[1]) / 60) - (parseInt(s[0]) + parseInt(s[1]) / 60);
-    document.getElementById('f-hdisp').value = Math.max(0, diff).toFixed(2);
+    document.getElementById('f-hdisp').value = fmtHora(Math.max(0, diff));
     calcResumo();
   }
 }
@@ -842,7 +864,7 @@ function addPecaRow() {
     <td><input type="text" placeholder="ex: 3185" class="peca-cod"></td>
     <td><input type="number" value="0" class="peca-qtd" oninput="calcResumo()"></td>
     <td><input type="number" value="0.00" step="0.01" class="peca-padrao" oninput="calcResumo()"></td>
-    <td class="row-hprod">0.0000</td>
+    <td class="row-hprod">00:00</td>
     <td><input type="number" value="0.000" step="0.001" class="peca-kwa" oninput="calcResumo()"></td>
     <td class="row-kwa-medio">0.000</td>
     <td><input type="text" placeholder="ex: A" class="peca-classe" style="width:70px;"></td>
@@ -863,7 +885,7 @@ function addParadaRow() {
       </select>
     </td>
     <td><input type="text" class="parada-desc" readonly></td>
-    <td><input type="number" value="0.00" step="0.01" class="parada-horas" oninput="calcResumo()"></td>
+    <td><input type="text" value="00:00" class="parada-horas" oninput="calcResumo()" placeholder="HH:MM"></td>
     <td><input type="text" class="parada-tipo" readonly></td>
     <td><button class="btn-del" onclick="this.parentElement.parentElement.remove(); calcResumo();">×</button></td>
   `;
@@ -901,7 +923,7 @@ function calcResumo() {
     const hProd = pad > 0 ? qtd / pad : 0;
     const kwa = parseFloat(tr.querySelector('.peca-kwa')?.value) || 0;
     const kwaM = qtd > 0 ? kwa / qtd : 0;
-    tr.querySelector('.row-hprod').textContent = hProd.toFixed(4);
+    tr.querySelector('.row-hprod').textContent = fmtHora(hProd);
     if (tr.querySelector('.row-kwa-medio')) tr.querySelector('.row-kwa-medio').textContent = kwaM.toFixed(3);
     totalQtd += qtd;
     totalHProd += hProd;
@@ -910,20 +932,20 @@ function calcResumo() {
   // Cálculo de paradas
   let totalHPar = 0;
   document.querySelectorAll('#paradas-body tr').forEach(tr => {
-    const h = parseFloat(tr.querySelector('.parada-horas').value) || 0;
+    const h = parseHora(tr.querySelector('.parada-horas').value) || 0;
     totalHPar += h;
   });
 
-  const hDisp = parseFloat(document.getElementById('f-hdisp').value) || 0;
-  const hProg = parseFloat(document.getElementById('f-hprog').value) || 0;
+  const hDisp = parseHora(document.getElementById('f-hdisp').value) || 0;
+  const hProg = parseHora(document.getElementById('f-hprog').value) || 0;
   const hTrab = Math.max(0, hProg - totalHPar);
   const efic = hTrab > 0 ? (totalHProd / hTrab) * 100 : 0;
   const util = hProg > 0 ? (hTrab / hProg) * 100 : 0;
 
   document.getElementById('res-qtd').textContent = totalQtd;
-  document.getElementById('res-hprod').textContent = totalHProd.toFixed(4);
-  document.getElementById('res-hpar').textContent = totalHPar.toFixed(4);
-  document.getElementById('res-htrab').textContent = hTrab.toFixed(4);
+  document.getElementById('res-hprod').textContent = fmtHora(totalHProd);
+  document.getElementById('res-hpar').textContent = fmtHora(totalHPar);
+  document.getElementById('res-htrab').textContent = fmtHora(hTrab);
   document.getElementById('res-efic').textContent = efic.toFixed(1) + '%';
   document.getElementById('res-util').textContent = util.toFixed(1) + '%';
 }
@@ -943,8 +965,8 @@ async function saveRegisto() {
   const descEmpresa = STATE.empresas.find(e => e.cod === codEmpresa)?.descricao || '';
   const hInicio = document.getElementById('f-h-inicio').value;
   const hFim = document.getElementById('f-h-fim').value;
-  const hDisp = document.getElementById('f-hdisp').value;
-  const hProg = parseFloat(document.getElementById('f-hprog').value) || 0;
+  const hDisp = parseHora(document.getElementById('f-hdisp').value);
+  const hProg = parseHora(document.getElementById('f-hprog').value) || 0;
 
   if (!data || !codOper || !codMaq) {
     showToast('Atenção: Cabeçalho incompleto!', 'err');
@@ -963,7 +985,7 @@ async function saveRegisto() {
   // Pré-cálculo das horas de parada para eficiência correta (REGRA 1.1)
   let totalHPar = 0;
   paradaRows.forEach(tr => {
-    totalHPar += parseFloat(tr.querySelector('.parada-horas').value) || 0;
+    totalHPar += parseHora(tr.querySelector('.parada-horas').value) || 0;
   });
   const hTrab = Math.max(0, hProg - totalHPar);
 
@@ -1017,7 +1039,7 @@ async function saveRegisto() {
       ...base,
       cod_parada: tr.querySelector('.parada-cod').value,
       desc_parada: tr.querySelector('.parada-desc').value,
-      h_parada: parseFloat(tr.querySelector('.parada-horas').value) || 0,
+      h_parada: parseHora(tr.querySelector('.parada-horas').value) || 0,
       tipo_parada: tr.querySelector('.parada-tipo').value,
       tipo_registro: 'PARADA'
     });
@@ -1118,7 +1140,7 @@ function renderAll() {
 
   document.getElementById('kpi-efic-global').textContent = globalEfic.toFixed(1) + '%';
   document.getElementById('kpi-qtd-total').textContent = totalProduced;
-  document.getElementById('kpi-residual').textContent = residual.toFixed(2) + 'h';
+  document.getElementById('kpi-residual').textContent = fmtHora(residual);
 
   const gargalosCount = pecas.filter(r => (r.eficiencia || 0) < 80).length;
   document.getElementById('kpi-gargalos').textContent = gargalosCount;
@@ -1168,8 +1190,8 @@ function renderAll() {
 
   // Regra 4: Projeção de Entrega
   const proj = document.getElementById('projecao-entrega');
-  const remTime = Math.max(0, 8.8 - totalHProd); // Tempo restante no turno
-  const estimated = Math.floor(avgEfic > 0 ? (totalProduced / (totalHProd || 1)) * remTime : 0);
+  const remTime = Math.max(0, 8.8 - totalHProd); // Tempo restante no turno (em decimal p/ cálculo)
+  const estimated = Math.floor(globalEfic > 0 ? (totalProduced / (totalHProd || 1)) * remTime : 0);
   proj.innerHTML = `<strong>${estimated} peças</strong> estimadas para o restante do turno baseado no ritmo atual.`;
 }
 
@@ -1325,8 +1347,8 @@ function renderParticular() {
   // Eficiência Global do Operador: (Tempo Padrão Produzido / Tempo Líquido Disponível)
   const globalEfic = totalHTrab > 0 ? (totalHProd / totalHTrab) * 100 : 0;
 
-  document.getElementById('part-hprog').textContent = totalHProg.toFixed(2) + 'h';
-  document.getElementById('part-htrab').textContent = totalHTrab.toFixed(4) + 'h';
+  document.getElementById('part-hprog').textContent = fmtHora(totalHProg);
+  document.getElementById('part-htrab').textContent = fmtHora(totalHTrab);
   document.getElementById('part-meta').textContent = meta + '%';
   document.getElementById('part-efic').textContent = globalEfic.toFixed(1) + '%';
 

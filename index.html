@@ -206,11 +206,11 @@
             </div>
             <div class="form-group">
               <label>Horas Disponíveis</label>
-              <input type="number" id="f-hdisp" step="0.01" value="9.8" oninput="calcResumo()">
+              <input type="text" id="f-hdisp" value="09:48" oninput="calcResumo()" placeholder="HH:MM" class="mono">
             </div>
             <div class="form-group">
               <label>Horas Prog.</label>
-              <input type="number" id="f-hprog" step="0.01" value="8.8" oninput="calcResumo()">
+              <input type="text" id="f-hprog" value="08:48" oninput="calcResumo()" placeholder="HH:MM" class="mono">
             </div>
             <div class="form-group">
               <label>Setor</label>
@@ -675,7 +675,7 @@
           </div>
           <div class="form-group">
             <label>Horas Prog.</label>
-            <input type="number" id="edit-f-hprog" step="0.01" oninput="calcEditResumo()" class="mono">
+            <input type="text" id="edit-f-hprog" oninput="calcEditResumo()" class="mono" placeholder="HH:MM">
           </div>
         </div>
       </div>
