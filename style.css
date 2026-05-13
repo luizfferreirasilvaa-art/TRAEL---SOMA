@@ -139,7 +139,9 @@ nav { flex: 1; padding: 24px 16px; }
   text-align: left; border-bottom: 1px solid var(--border); 
   font-family: var(--font-mono); letter-spacing: 1px;
 }
-.paradas-table td { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 14px; }
+.paradas-table td { padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 13px; }
+.paradas-table tr:nth-child(even) { background: rgba(255,255,255,0.01); }
+.paradas-table tr:hover { background: rgba(255,255,255,0.03); }
 .paradas-table tr:last-child td { border-bottom: none; }
 
 .status-tag { 

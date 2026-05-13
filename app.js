@@ -21,9 +21,9 @@ let STATE = {
 function fmtHora(dec) {
   if (dec === undefined || dec === null || isNaN(dec)) return "00:00";
   const sign = dec < 0 ? "-" : "";
-  const abs = Math.abs(dec);
-  const h = Math.floor(abs);
-  const m = Math.round((abs - h) * 60);
+  const totalMin = Math.round(Math.abs(dec) * 60);
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
   return `${sign}${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
@@ -120,7 +120,15 @@ async function loadConfig() {
     const meEmpresa = document.getElementById('edit-f-empresa');
     if (meEmpresa) meEmpresa.innerHTML = '<option value="">Selecione</option>' + STATE.empresas.map(e => `<option value="${e.cod}">${e.cod} - ${e.descricao}</option>`).join('');
     
-    // Preencher Selects no Modal  // Particular
+    // Preencher Select de Filtro na Análise de Paradas
+    const parFilterSetor = document.getElementById('paradas-filter-setor');
+    if (parFilterSetor) parFilterSetor.innerHTML = '<option value="">Todos os Setores</option>' + STATE.setores.map(s => `<option value="${s.cod}">${s.descricao}</option>`).join('');
+
+    // Preencher Filtro de Paradas
+    const parFilter = document.getElementById('paradas-filter-setor');
+    if (parFilter) parFilter.innerHTML = '<option value="">Todos os Setores</option>' + STATE.setores.map(s => `<option value="${s.cod}">${s.descricao}</option>`).join('');
+
+    // Particular
     const selPart = document.getElementById('particular-oper');
     if (selPart) {
       const opts = STATE.operadores.map(o => `<option value="${o.cod}">${o.cod} - ${o.nome}</option>`).join('');
@@ -138,7 +146,7 @@ async function loadData() {
       .order('data', { ascending: false });
     STATE.registros = regs || [];
   } catch (err) {
-    showToast('Erro ao acessar base de dados de tempos', 'err');
+    showToast('Erro ao acessar Base de Dados', 'err');
   }
 }
 
@@ -166,7 +174,7 @@ function setPage(p) {
   document.getElementById('page-title').textContent = {
     dashboard: 'Dashboard Operacional',
     digitador: 'Digitador',
-    banco: 'Base de Dados de Tempos',
+    banco: 'Base de Dados',
     paradas: 'Análise de Paradas',
     particular: 'Eficiência do Operador',
     config: 'Configurações',
@@ -525,7 +533,13 @@ function clearFilters() {
 let charts = { tipo: null, motivos: null };
 
 function renderParadas() {
-  const paradas = STATE.registros.filter(r => r.tipo_registro === 'PARADA');
+  const fSetor = document.getElementById('paradas-filter-setor')?.value;
+  let paradas = STATE.registros.filter(r => r.tipo_registro === 'PARADA');
+  
+  if (fSetor) {
+    paradas = paradas.filter(r => r.cod_setor === fSetor);
+  }
+
   const tbody = document.getElementById('paradas-detail-body');
 
   if (tbody) {
@@ -565,7 +579,14 @@ function renderParadas() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { position: 'bottom', labels: { color: '#8b949e' } } }
+      plugins: { 
+        legend: { position: 'bottom', labels: { color: '#8b949e' } },
+        tooltip: {
+          callbacks: {
+            label: (context) => `Tempo: ${fmtHora(context.raw)}`
+          }
+        }
+      }
     }
   });
 
@@ -593,7 +614,14 @@ function renderParadas() {
       responsive: true,
       maintainAspectRatio: false,
       indexAxis: 'y',
-      plugins: { legend: { display: false } },
+      plugins: { 
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (context) => `Tempo: ${fmtHora(context.raw)}`
+          }
+        }
+      },
       scales: {
         x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#8b949e' } },
         y: { grid: { display: false }, ticks: { color: '#8b949e' } }
@@ -1175,11 +1203,11 @@ function renderAll() {
   document.getElementById('kpi-qtd-total').textContent = totalProduced;
   
   if (timeBalance >= 0) {
-    resEl.textContent = "+" + fmtHora(timeBalance);
+    resEl.textContent = fmtHora(timeBalance); // Sem o '+' manual se preferir, ou manter se quiser explicitar ganho
     resCard.className = 'card kpi success';
-    resLbl.textContent = 'Ganho de Tempo (Sobrando)';
+    resLbl.textContent = 'Ganho de Tempo';
   } else {
-    resEl.textContent = fmtHora(Math.abs(timeBalance));
+    resEl.textContent = fmtHora(timeBalance); // Já vem com '-' do formatador
     resCard.className = 'card kpi danger';
     resLbl.textContent = 'Tempo Residual (Perda)';
   }
@@ -1401,11 +1429,11 @@ function renderParticular() {
   
   if (balEl && balCard) {
     if (timeBalance >= 0) {
-      balEl.textContent = "+" + fmtHora(timeBalance);
+      balEl.textContent = fmtHora(timeBalance);
       balCard.className = 'card kpi success';
-      if (balLbl) balLbl.textContent = 'Ganho de Tempo (Extra)';
+      if (balLbl) balLbl.textContent = 'Ganho de Tempo';
     } else {
-      balEl.textContent = fmtHora(Math.abs(timeBalance));
+      balEl.textContent = fmtHora(timeBalance);
       balCard.className = 'card kpi danger';
       if (balLbl) balLbl.textContent = 'Tempo Residual (Perda)';
     }
@@ -1418,7 +1446,7 @@ function renderParticular() {
   }
 
   const badge = document.getElementById('part-meta-badge');
-  if (badge) badge.textContent = operData ? `${operData.nome} — Meta: ${meta}%` : '';
+  if (badge) badge.textContent = '';
 
   // Agrupamento por projeto (cod_peca)
   const pm = {};
