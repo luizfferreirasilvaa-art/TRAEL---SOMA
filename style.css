@@ -70,7 +70,7 @@ nav { flex: 1; padding: 24px 16px; }
   background: var(--card); 
   color: var(--accent); 
   border-color: var(--border);
-  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
   position: relative;
 }
 .nav-item.active::before {

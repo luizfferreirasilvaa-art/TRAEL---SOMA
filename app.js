@@ -164,7 +164,7 @@ function renderDatabase() {
     return;
   }
 
-  // Botão excluir: visível apenas para programador e coordenador
+  // Botão excluir/editar: visível apenas para programador e coordenador
   const canDelete = AUTH.isMinCoordenador();
 
   list.innerHTML = filtered.map(r => `
@@ -176,9 +176,58 @@ function renderDatabase() {
       <td>${r.qtd || 0}</td>
       <td>${r.tipo_registro === 'PRODUCAO' ? (r.eficiencia ? r.eficiencia.toFixed(1)+'%' : '-') : '-'}</td>
       <td><span class="status-badge ${getStatusClass(r.eficiencia)}">${r.tipo_registro}</span></td>
-      <td>${canDelete ? `<button class="btn btn-danger btn-sm" data-rbac="delete-btn" onclick="delRegistro('${r.id}')">Excluir</button>` : '<span style="color:var(--text-muted);font-size:12px;">—</span>'}</td>
+      <td>${canDelete ? `<button class="btn btn-warning btn-sm" onclick="editRegistro('${r.id}')" style="margin-right:5px;background:transparent;border:none;cursor:pointer;font-size:14px;" title="Editar">✏️</button><button class="btn btn-danger btn-sm" data-rbac="delete-btn" onclick="delRegistro('${r.id}')">Excluir</button>` : '<span style="color:var(--text-muted);font-size:12px;">—</span>'}</td>
     </tr>
   `).join('');
+}
+
+async function editRegistro(id) {
+  const r = STATE.registros.find(x => x.id === id);
+  if (!r) return;
+  const opt = prompt(\`O que deseja alterar em \${r.tipo_registro}?
+1 - Código (Peça ou Parada)
+2 - Valor (Quantidade ou Horas)
+3 - Observação / Título da Parada\`, '1');
+  
+  if (!opt) return;
+
+  let field, val;
+  if (opt === '1') {
+    field = r.tipo_registro === 'PRODUCAO' ? 'cod_peca' : 'cod_parada';
+    val = prompt(\`Novo código:\`, r[field]);
+    if (val) val = val.toUpperCase();
+  } else if (opt === '2') {
+    field = r.tipo_registro === 'PRODUCAO' ? 'qtd' : 'h_parada';
+    val = prompt(\`Novo valor para \${field}:\`, r[field]);
+    if (val !== null) val = parseFloat(val);
+  } else if (opt === '3') {
+    field = r.tipo_registro === 'PRODUCAO' ? 'classe_equipamento' : 'desc_parada';
+    val = prompt(\`Nova descrição / observação / classe:\`, r[field]);
+  }
+
+  if (field && val !== null && !isNaN(val) || (field && val !== null && isNaN(val))) {
+    const payload = { [field]: val };
+    
+    // Recalcular horas produtivas e eficiência se for PRODUCÃO e mudar qtd
+    if (r.tipo_registro === 'PRODUCAO' && field === 'qtd') {
+       const hProd = r.tp_padrao > 0 ? val / r.tp_padrao : 0;
+       payload.h_produtiva = hProd;
+       if (r.h_programada > 0) {
+          payload.eficiencia = (hProd / r.h_programada) * 100;
+       }
+    }
+
+    const { error } = await sb.from('registros_cronoanalise').update(payload).eq('id', id);
+    if (!error) {
+      showToast('Registro alterado!', 'ok');
+      await loadData();
+      renderAll();
+      if (document.getElementById('page-banco')?.classList.contains('active')) renderDatabase();
+      if (document.getElementById('page-particular')?.classList.contains('active')) renderParticular();
+    } else {
+      showToast('Erro ao alterar: ' + error.message, 'err');
+    }
+  }
 }
 
 function getStatusClass(efic) {
@@ -306,7 +355,10 @@ async function renderConfigTable() {
     lOper.innerHTML = STATE.operadores.map(o => `
       <div class="config-row">
         <span><strong>${o.cod}</strong> - ${o.nome}</span>
-        <button class="btn-del" onclick="removeConfig('operadores', '${o.id}')">×</button>
+        <div>
+          ${AUTH.isMinCoordenador() ? `<button class="btn-edit" style="background:transparent;border:none;cursor:pointer;margin-right:10px;font-size:14px;" onclick="editConfig('operadores', '${o.id}', '${o.nome}', 'nome')" title="Editar">✏️</button>` : ''}
+          <button class="btn-del" onclick="removeConfig('operadores', '${o.id}')">×</button>
+        </div>
       </div>
     `).join('');
   }
@@ -314,7 +366,10 @@ async function renderConfigTable() {
     lMaq.innerHTML = STATE.maquinas.map(m => `
       <div class="config-row">
         <span><strong>${m.cod}</strong> - ${m.nome}</span>
-        <button class="btn-del" onclick="removeConfig('maquinas', '${m.id}')">×</button>
+        <div>
+          ${AUTH.isMinCoordenador() ? `<button class="btn-edit" style="background:transparent;border:none;cursor:pointer;margin-right:10px;font-size:14px;" onclick="editConfig('maquinas', '${m.id}', '${m.nome}', 'nome')" title="Editar">✏️</button>` : ''}
+          <button class="btn-del" onclick="removeConfig('maquinas', '${m.id}')">×</button>
+        </div>
       </div>
     `).join('');
   }
@@ -322,7 +377,10 @@ async function renderConfigTable() {
     lPar.innerHTML = STATE.paradas.map(p => `
       <div class="config-row">
         <span><strong>${p.cod}</strong> - ${p.descricao} <small>(${p.tipo})</small></span>
-        <button class="btn-del" onclick="removeConfig('paradas_motivos', '${p.id}')">×</button>
+        <div>
+          ${AUTH.isMinCoordenador() ? `<button class="btn-edit" style="background:transparent;border:none;cursor:pointer;margin-right:10px;font-size:14px;" onclick="editConfig('paradas_motivos', '${p.id}', '${p.descricao}', 'descricao')" title="Editar">✏️</button>` : ''}
+          <button class="btn-del" onclick="removeConfig('paradas_motivos', '${p.id}')">×</button>
+        </div>
       </div>
     `).join('');
   }
@@ -332,7 +390,10 @@ async function renderConfigTable() {
       : STATE.setores.map(s => `
       <div class="config-row">
         <span><strong>${s.cod}</strong> - ${s.descricao}${s.meta ? ' <span style="color:var(--accent);font-size:12px;margin-left:8px;">Meta: <strong>${s.meta}%</strong></span>' : ''}</span>
-        <button class="btn-del" onclick="removeConfig('setores', '${s.id}')">×</button>
+        <div>
+          ${AUTH.isMinCoordenador() ? `<button class="btn-edit" style="background:transparent;border:none;cursor:pointer;margin-right:10px;font-size:14px;" onclick="editConfig('setores', '${s.id}', '${s.descricao}', 'descricao')" title="Editar">✏️</button>` : ''}
+          <button class="btn-del" onclick="removeConfig('setores', '${s.id}')">×</button>
+        </div>
       </div>
     `).join('');
   }
@@ -342,9 +403,28 @@ async function renderConfigTable() {
       : STATE.empresas.map(e => `
       <div class="config-row">
         <span><strong>${e.cod}</strong> - ${e.descricao}</span>
-        <button class="btn-del" onclick="removeConfig('empresas', '${e.id}')">×</button>
+        <div>
+          ${AUTH.isMinCoordenador() ? `<button class="btn-edit" style="background:transparent;border:none;cursor:pointer;margin-right:10px;font-size:14px;" onclick="editConfig('empresas', '${e.id}', '${e.descricao}', 'descricao')" title="Editar">✏️</button>` : ''}
+          <button class="btn-del" onclick="removeConfig('empresas', '${e.id}')">×</button>
+        </div>
       </div>
     `).join('');
+  }
+}
+
+async function editConfig(table, id, currentVal, fieldName) {
+  const newVal = prompt(\`Editar \${fieldName}:\`, currentVal);
+  if (newVal !== null && newVal.trim() !== '') {
+    const payload = {};
+    payload[fieldName] = newVal.toUpperCase();
+    const { error } = await sb.from(table).update(payload).eq('id', id);
+    if (!error) {
+      showToast('Alterado com sucesso!', 'ok');
+      await loadConfig();
+      renderConfigTable();
+    } else {
+      showToast('Erro ao alterar: ' + error.message, 'err');
+    }
   }
 }
 
@@ -1005,8 +1085,9 @@ function renderParticular() {
           <summary style="font-weight:600; font-size:14px; outline:none; color:var(--accent);">
             📅 ${new Date(o.data).toLocaleDateString('pt-BR')} — ${o.cod_parada || 'Sem Título'}
           </summary>
-          <div style="padding-top:10px; font-size:13px; color:var(--text); line-height:1.5;">
-            ${o.desc_parada || 'Sem descrição.'}
+          <div style="padding-top:10px; font-size:13px; color:var(--text); line-height:1.5; display:flex; justify-content:space-between; align-items:center;">
+            <span>${o.desc_parada || 'Sem descrição.'}</span>
+            ${AUTH.isMinCoordenador() ? `<button style="background:transparent;border:none;cursor:pointer;font-size:14px;" onclick="editObs('${o.id}', '${o.desc_parada || ''}')" title="Editar">✏️</button>` : ''}
           </div>
         </details>
       `).join('');
@@ -1053,6 +1134,20 @@ function renderParticular() {
       }
     }
   });
+}
+
+async function editObs(id, currentDesc) {
+  const newVal = prompt('Editar observação:', currentDesc);
+  if (newVal !== null && newVal.trim() !== '') {
+    const { error } = await sb.from('registros_cronoanalise').update({ desc_parada: newVal }).eq('id', id);
+    if (!error) {
+      showToast('Observação alterada!', 'ok');
+      await loadData();
+      renderParticular();
+    } else {
+      showToast('Erro: ' + error.message, 'err');
+    }
+  }
 }
 
 // ─────────── AUDITORIA (só Programador) ────────────────────────────────────
@@ -1118,5 +1213,8 @@ window.fillParadaRow = fillParadaRow;
 window.updateParadaDesc = updateParadaDesc;
 window.renderParticular = renderParticular;
 window.renderAuditoria  = renderAuditoria;
+window.editConfig       = editConfig;
+window.editRegistro     = editRegistro;
+window.editObs          = editObs;
 
 console.log('SOMA: Sistema inicializado com sucesso. v2.2 — RBAC ativo.');
