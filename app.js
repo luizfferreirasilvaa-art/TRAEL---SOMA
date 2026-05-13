@@ -1167,9 +1167,9 @@ function renderAll() {
     tableComp.innerHTML = latestProd.map(r => `
       <tr>
         <td>${r.cod_peca}</td>
-        <td>${(r.h_produtiva * 1.1).toFixed(2)}</td> 
-        <td>${(r.h_produtiva * 1.05).toFixed(2)}</td>
-        <td>${(r.tp_padrao || 0).toFixed(2)}</td>
+        <td>${fmtHora(r.h_produtiva * 1.1)}</td> 
+        <td>${fmtHora(r.h_produtiva * 1.05)}</td>
+        <td>${fmtHora(r.tp_padrao || 0)}</td>
       </tr>
     `).join('');
   }
