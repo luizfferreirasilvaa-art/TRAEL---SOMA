@@ -120,13 +120,12 @@ async function loadConfig() {
     const meEmpresa = document.getElementById('edit-f-empresa');
     if (meEmpresa) meEmpresa.innerHTML = '<option value="">Selecione</option>' + STATE.empresas.map(e => `<option value="${e.cod}">${e.cod} - ${e.descricao}</option>`).join('');
     
-    // Preencher Select de Filtro na Análise de Paradas
+    // Filtros de Paradas
     const parFilterSetor = document.getElementById('paradas-filter-setor');
-    if (parFilterSetor) parFilterSetor.innerHTML = '<option value="">Todos os Setores</option>' + STATE.setores.map(s => `<option value="${s.cod}">${s.descricao}</option>`).join('');
+    if (parFilterSetor) parFilterSetor.innerHTML = '<option value="">Todos</option>' + STATE.setores.map(s => `<option value="${s.cod}">${s.descricao}</option>`).join('');
 
-    // Preencher Filtro de Paradas
-    const parFilter = document.getElementById('paradas-filter-setor');
-    if (parFilter) parFilter.innerHTML = '<option value="">Todos os Setores</option>' + STATE.setores.map(s => `<option value="${s.cod}">${s.descricao}</option>`).join('');
+    const parFilterMot = document.getElementById('paradas-filter-motivo');
+    if (parFilterMot) parFilterMot.innerHTML = '<option value="">Todos</option>' + STATE.paradas.map(p => `<option value="${p.cod}">${p.descricao}</option>`).join('');
 
     // Particular
     const selPart = document.getElementById('particular-oper');
@@ -534,11 +533,19 @@ let charts = { tipo: null, motivos: null };
 
 function renderParadas() {
   const fSetor = document.getElementById('paradas-filter-setor')?.value;
+  const fData = document.getElementById('paradas-filter-data')?.value;
+  const fMot = document.getElementById('paradas-filter-motivo')?.value;
+  const fTipo = document.getElementById('paradas-filter-tipo')?.value;
+
   let paradas = STATE.registros.filter(r => r.tipo_registro === 'PARADA');
   
-  if (fSetor) {
-    paradas = paradas.filter(r => r.cod_setor === fSetor);
-  }
+  if (fSetor) paradas = paradas.filter(r => r.cod_setor === fSetor);
+  if (fData) paradas = paradas.filter(r => r.data === fData);
+  if (fMot) paradas = paradas.filter(r => r.cod_parada === fMot);
+  if (fTipo) paradas = paradas.filter(r => r.tipo_parada === fTipo);
+
+  // Ordenar do maior para o menor (Tempo)
+  paradas.sort((a, b) => (b.h_parada || 0) - (a.h_parada || 0));
 
   const tbody = document.getElementById('paradas-detail-body');
 
