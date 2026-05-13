@@ -222,7 +222,10 @@ function renderDatabase() {
       <td>${r.qtd || 0}</td>
       <td>${r.tipo_registro === 'PRODUCAO' ? (r.eficiencia ? r.eficiencia.toFixed(1) + '%' : '-') : '-'}</td>
       <td><span class="status-badge ${getStatusClass(r.eficiencia)}">${r.tipo_registro}</span></td>
-      <td>${canDelete ? `<button class="btn btn-warning btn-sm" onclick="editRegistro('${r.id}')" style="margin-right:5px;background:transparent;border:none;cursor:pointer;font-size:14px;" title="Editar">✏️</button><button class="btn btn-danger btn-sm" data-rbac="delete-btn" onclick="delRegistro('${r.id}')">Excluir</button>` : '<span style="color:var(--text-muted);font-size:12px;">—</span>'}</td>
+      <td>${canDelete ? `
+        <button class="btn-icon edit" onclick="editRegistro('${r.id}')" title="Editar">✏️</button>
+        <button class="btn-icon del" onclick="delRegistro('${r.id}')" title="Excluir">🗑️</button>
+      ` : '<span style="color:var(--text-muted);font-size:12px;">—</span>'}</td>
     </tr>
   `).join('');
 }
@@ -583,8 +586,8 @@ async function renderConfigTable() {
       <div class="config-row">
         <span><strong>${o.cod}</strong> - ${o.nome}</span>
         <div>
-          ${AUTH.isMinCoordenador() ? `<button class="btn-edit" style="background:transparent;border:none;cursor:pointer;margin-right:10px;font-size:14px;" onclick="editConfig('operadores', '${o.id}')" title="Editar">✏️</button>` : ''}
-          <button class="btn-del" onclick="removeConfig('operadores', '${o.id}')">×</button>
+          ${AUTH.isMinCoordenador() ? `<button class="btn-icon edit" onclick="editConfig('operadores', '${o.id}')" title="Editar">✏️</button>` : ''}
+          <button class="btn-icon del" onclick="removeConfig('operadores', '${o.id}')" title="Excluir">🗑️</button>
         </div>
       </div>
     `).join('');
@@ -594,8 +597,8 @@ async function renderConfigTable() {
       <div class="config-row">
         <span><strong>${m.cod}</strong> - ${m.nome}</span>
         <div>
-          ${AUTH.isMinCoordenador() ? `<button class="btn-edit" style="background:transparent;border:none;cursor:pointer;margin-right:10px;font-size:14px;" onclick="editConfig('maquinas', '${m.id}')" title="Editar">✏️</button>` : ''}
-          <button class="btn-del" onclick="removeConfig('maquinas', '${m.id}')">×</button>
+          ${AUTH.isMinCoordenador() ? `<button class="btn-icon edit" onclick="editConfig('maquinas', '${m.id}')" title="Editar">✏️</button>` : ''}
+          <button class="btn-icon del" onclick="removeConfig('maquinas', '${m.id}')" title="Excluir">🗑️</button>
         </div>
       </div>
     `).join('');
@@ -605,8 +608,8 @@ async function renderConfigTable() {
       <div class="config-row">
         <span><strong>${p.cod}</strong> - ${p.descricao} <small>(${p.tipo})</small></span>
         <div>
-          ${AUTH.isMinCoordenador() ? `<button class="btn-edit" style="background:transparent;border:none;cursor:pointer;margin-right:10px;font-size:14px;" onclick="editConfig('paradas_motivos', '${p.id}')" title="Editar">✏️</button>` : ''}
-          <button class="btn-del" onclick="removeConfig('paradas_motivos', '${p.id}')">×</button>
+          ${AUTH.isMinCoordenador() ? `<button class="btn-icon edit" onclick="editConfig('paradas_motivos', '${p.id}')" title="Editar">✏️</button>` : ''}
+          <button class="btn-icon del" onclick="removeConfig('paradas_motivos', '${p.id}')" title="Excluir">🗑️</button>
         </div>
       </div>
     `).join('');
@@ -618,8 +621,8 @@ async function renderConfigTable() {
       <div class="config-row">
         <span><strong>${s.cod}</strong> - ${s.descricao}${s.meta ? ' <span style="color:var(--accent);font-size:12px;margin-left:8px;">Meta: <strong>${s.meta}%</strong></span>' : ''}</span>
         <div>
-          ${AUTH.isMinCoordenador() ? `<button class="btn-edit" style="background:transparent;border:none;cursor:pointer;margin-right:10px;font-size:14px;" onclick="editConfig('setores', '${s.id}')" title="Editar">✏️</button>` : ''}
-          <button class="btn-del" onclick="removeConfig('setores', '${s.id}')">×</button>
+          ${AUTH.isMinCoordenador() ? `<button class="btn-icon edit" onclick="editConfig('setores', '${s.id}')" title="Editar">✏️</button>` : ''}
+          <button class="btn-icon del" onclick="removeConfig('setores', '${s.id}')" title="Excluir">🗑️</button>
         </div>
       </div>
     `).join('');
@@ -631,8 +634,8 @@ async function renderConfigTable() {
       <div class="config-row">
         <span><strong>${e.cod}</strong> - ${e.descricao}</span>
         <div>
-          ${AUTH.isMinCoordenador() ? `<button class="btn-edit" style="background:transparent;border:none;cursor:pointer;margin-right:10px;font-size:14px;" onclick="editConfig('empresas', '${e.id}')" title="Editar">✏️</button>` : ''}
-          <button class="btn-del" onclick="removeConfig('empresas', '${e.id}')">×</button>
+          ${AUTH.isMinCoordenador() ? `<button class="btn-icon edit" onclick="editConfig('empresas', '${e.id}')" title="Editar">✏️</button>` : ''}
+          <button class="btn-icon del" onclick="removeConfig('empresas', '${e.id}')" title="Excluir">🗑️</button>
         </div>
       </div>
     `).join('');

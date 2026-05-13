@@ -206,8 +206,19 @@ input:focus, select:focus {
 .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
 .btn-outline:hover { background: var(--border); }
 .btn-sm { padding: 8px 16px; font-size: 12px; border-radius: 8px; }
-.btn-danger { background: var(--danger); color: #fff; border: 1px solid var(--danger); }
 .btn-danger:hover { background: #ff1a43; box-shadow: 0 0 15px rgba(255, 77, 109, 0.4); }
+
+.btn-icon {
+  width: 34px; height: 34px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 10px; cursor: pointer; border: none;
+  font-size: 16px; transition: all 0.2s;
+  margin: 0 4px;
+}
+.btn-icon.edit { background: var(--accent3); color: #fff; }
+.btn-icon.edit:hover { background: #3d7acc; transform: translateY(-2px); }
+.btn-icon.del { background: var(--danger); color: #fff; }
+.btn-icon.del:hover { background: #e6395b; transform: translateY(-2px); }
 
 /* CONFIG & LISTS */
 .config-list { 
