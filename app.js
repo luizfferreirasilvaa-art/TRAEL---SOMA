@@ -1356,11 +1356,28 @@ function renderParticular() {
 
   // Eficiência Global do Operador: (Tempo Padrão Produzido / Tempo Líquido Disponível)
   const globalEfic = totalHTrab > 0 ? (totalHProd / totalHTrab) * 100 : 0;
+  const timeBalance = totalHProd - totalHTrab;
 
   document.getElementById('part-hprog').textContent = fmtHora(totalHProg);
   document.getElementById('part-htrab').textContent = fmtHora(totalHTrab);
   document.getElementById('part-meta').textContent = meta + '%';
   document.getElementById('part-efic').textContent = globalEfic.toFixed(1) + '%';
+
+  const balEl = document.getElementById('part-balance');
+  const balCard = document.getElementById('part-balance-card');
+  const balLbl = balCard?.querySelector('.lbl');
+  
+  if (balEl && balCard) {
+    if (timeBalance >= 0) {
+      balEl.textContent = "+" + fmtHora(timeBalance);
+      balCard.className = 'card kpi success';
+      if (balLbl) balLbl.textContent = 'Ganho de Tempo (Extra)';
+    } else {
+      balEl.textContent = fmtHora(Math.abs(timeBalance));
+      balCard.className = 'card kpi danger';
+      if (balLbl) balLbl.textContent = 'Tempo Residual (Perda)';
+    }
+  }
 
   const eficCard = document.getElementById('part-efic-card');
   if (eficCard) {

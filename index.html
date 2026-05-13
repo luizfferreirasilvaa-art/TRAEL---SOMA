@@ -428,15 +428,15 @@
       <!-- Conteúdo carregado -->
       <div id="particular-content" style="display:none;">
         <!-- KPIs -->
-        <div class="grid-4 mb-24">
+        <div class="grid-5 mb-24">
           <div class="card kpi blue">
             <div class="card-title">Horas Programadas</div>
-            <div class="val" id="part-hprog">0h</div>
+            <div class="val" id="part-hprog">00:00</div>
             <div class="lbl">Total no Período</div>
           </div>
           <div class="card kpi warn">
             <div class="card-title">Horas Trabalhadas</div>
-            <div class="val" id="part-htrab">0h</div>
+            <div class="val" id="part-htrab">00:00</div>
             <div class="lbl">Tempo Líquido (H. Prog - Paradas)</div>
           </div>
           <div class="card kpi accent">
@@ -448,6 +448,11 @@
             <div class="card-title">Eficiência Alcançada</div>
             <div class="val" id="part-efic">0%</div>
             <div class="lbl">vs. Meta</div>
+          </div>
+          <div class="card kpi" id="part-balance-card">
+            <div class="card-title">Saldo de Tempo</div>
+            <div class="val" id="part-balance">00:00</div>
+            <div class="lbl">Ganho/Perda de Prod.</div>
           </div>
         </div>
 
