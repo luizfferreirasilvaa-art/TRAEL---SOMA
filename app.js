@@ -851,7 +851,7 @@ function calcTurnHours() {
     const s = start.split(':');
     const e = end.split(':');
     const diff = (parseInt(e[0]) + parseInt(e[1]) / 60) - (parseInt(s[0]) + parseInt(s[1]) / 60);
-    document.getElementById('f-hdisp').value = fmtHora(Math.max(0, diff));
+    // hDisp não é mais exibido mas pode ser mantido internamente se necessário
     calcResumo();
   }
 }
@@ -936,7 +936,6 @@ function calcResumo() {
     totalHPar += h;
   });
 
-  const hDisp = parseHora(document.getElementById('f-hdisp').value) || 0;
   const hProg = parseHora(document.getElementById('f-hprog').value) || 0;
   const hTrab = Math.max(0, hProg - totalHPar);
   const efic = hTrab > 0 ? (totalHProd / hTrab) * 100 : 0;
@@ -965,7 +964,6 @@ async function saveRegisto() {
   const descEmpresa = STATE.empresas.find(e => e.cod === codEmpresa)?.descricao || '';
   const hInicio = document.getElementById('f-h-inicio').value;
   const hFim = document.getElementById('f-h-fim').value;
-  const hDisp = parseHora(document.getElementById('f-hdisp').value);
   const hProg = parseHora(document.getElementById('f-hprog').value) || 0;
 
   if (!data || !codOper || !codMaq) {
@@ -1003,7 +1001,6 @@ async function saveRegisto() {
     desc_empresa: descEmpresa || null,
     h_inicio: hInicio || null,
     h_fim: hFim || null,
-    h_disponivel: parseFloat(hDisp) || 0,
     h_programada: hProg,
     // Auditoria de quem salvou
     created_by_name: (typeof AUTH !== 'undefined' && AUTH.name) ? AUTH.name : 'Sistema',
