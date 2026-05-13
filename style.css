@@ -156,11 +156,11 @@ select,
 textarea {
   background: var(--input-bg); 
   border: 1px solid var(--border); 
-  border-radius: 10px;
-  padding: 12px 14px; 
+  border-radius: 8px;
+  padding: 10px 12px; 
   color: var(--text); 
   font-family: var(--font-body); 
-  font-size: 14px;
+  font-size: 13px;
   transition: all 0.2s; 
   outline: none;
   width: 100%;
@@ -207,14 +207,34 @@ input:focus, select:focus {
 .btn-danger { background: var(--danger); color: #fff; border: 1px solid var(--danger); }
 .btn-danger:hover { background: #ff1a43; box-shadow: 0 0 15px rgba(255, 77, 109, 0.4); }
 
-/* CONFIG & MODAL */
-.config-list { display: flex; flex-direction: column; gap: 10px; }
+/* CONFIG & LISTS */
+.config-list { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 6px; 
+  max-height: 400px; 
+  overflow-y: auto; 
+  padding-right: 8px;
+}
+.config-list::-webkit-scrollbar { width: 4px; }
+.config-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
 .config-row {
   display: flex; justify-content: space-between; align-items: center;
-  background: var(--input-bg); border: 1px solid var(--border);
-  padding: 14px 18px; border-radius: 12px; transition: 0.2s;
+  background: rgba(255,255,255,0.02); 
+  border: 1px solid var(--border);
+  padding: 8px 16px; 
+  border-radius: 8px; 
+  transition: 0.2s;
+  font-size: 13px;
 }
-.config-row:hover { border-color: var(--accent); }
+.config-row:hover { 
+  background: rgba(255,255,255,0.05); 
+  border-color: var(--accent);
+  transform: translateX(4px);
+}
+.config-row strong { color: var(--accent); font-family: var(--font-mono); }
+.config-row small { color: var(--text-muted); margin-left: 10px; }
 
 .modal-bg {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
