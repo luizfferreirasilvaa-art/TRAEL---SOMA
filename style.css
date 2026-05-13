@@ -152,7 +152,8 @@ input[type="text"],
 input[type="number"], 
 input[type="date"], 
 input[type="time"], 
-select {
+select,
+textarea {
   background: var(--input-bg); 
   border: 1px solid var(--border); 
   border-radius: 10px;
@@ -162,6 +163,8 @@ select {
   font-size: 14px;
   transition: all 0.2s; 
   outline: none;
+  width: 100%;
+  display: block;
 }
 
 input:focus, select:focus { 

@@ -39,7 +39,7 @@
         <span class="nav-icon">🛑</span><span>Análise Paradas</span>
       </div>
       <div class="nav-item" onclick="setPage('particular')" id="nav-particular">
-        <span class="nav-icon">👤</span><span>Análise Particular</span>
+        <span class="nav-icon">👤</span><span>Eficiência do Operador</span>
       </div>
       <div class="nav-item" onclick="setPage('config')" id="nav-config">
         <span class="nav-icon">⚙️</span><span>Configurações</span>
@@ -413,7 +413,7 @@
 
       <!-- Seletor de profissional -->
       <div class="card mb-24">
-        <div class="card-title">👤 SELECIONAR PROFISSIONAL</div>
+        <div class="card-title">👤 SELECIONAR OPERADOR PARA ANÁLISE</div>
         <div class="row" style="gap:12px; align-items:center;">
           <select id="particular-oper" onchange="renderParticular()" style="flex:1; max-width:420px;">
             <option value="">— Selecione um operador —</option>
@@ -458,7 +458,7 @@
         <!-- Projetos + Gráfico -->
         <div class="grid-2 mb-24">
           <div class="card">
-            <div class="card-title">PROJETOS DO PROFISSIONAL</div>
+            <div class="card-title">PROJETOS DO OPERADOR</div>
             <div class="table-wrap">
               <table class="paradas-table">
                 <thead>
@@ -488,7 +488,7 @@
           </div>
 
           <div class="card mt-24">
-            <div class="card-title">OBSERVAÇÕES DO PROFISSIONAL</div>
+            <div class="card-title">OBSERVAÇÕES DO OPERADOR</div>
             <div id="part-obs-body">
               <em style="color:var(--muted);font-size:13px;">Selecione um profissional para ver as observações.</em>
             </div>
@@ -734,6 +734,36 @@
       <div class="flex-end mt-24">
         <button class="btn btn-outline" onclick="closeEditModal()">Cancelar</button>
         <button class="btn btn-primary" onclick="handleUpdate()" style="min-width: 180px;">💾 Salvar Alterações</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL Edição de Configurações -->
+  <div class="modal-bg" id="modal-edit-config">
+    <div class="modal" style="width: 450px;">
+      <div class="modal-close" onclick="closeConfigModal()">×</div>
+      <h2 class="text-accent mono mb-24" style="font-size: 18px;">✏️ EDITAR CONFIGURAÇÃO</h2>
+      
+      <input type="hidden" id="edit-conf-id">
+      <input type="hidden" id="edit-conf-table">
+
+      <div class="form-group mb-16">
+        <label>Código (ID Único)</label>
+        <input type="text" id="edit-conf-cod" class="mono" readonly style="opacity: 0.6; cursor: not-allowed;">
+      </div>
+
+      <div class="form-group mb-16">
+        <label id="edit-conf-label-desc">Nome / Descrição</label>
+        <input type="text" id="edit-conf-desc">
+      </div>
+
+      <div id="edit-conf-extra-fields">
+        <!-- Campos específicos como Tipo de Parada ou Meta de Setor -->
+      </div>
+
+      <div class="flex-end mt-24">
+        <button class="btn btn-outline" onclick="closeConfigModal()">Cancelar</button>
+        <button class="btn btn-primary" onclick="saveEditConfig()">💾 Salvar Alterações</button>
       </div>
     </div>
   </div>

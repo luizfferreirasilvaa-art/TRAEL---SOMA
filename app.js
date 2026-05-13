@@ -97,6 +97,13 @@ async function loadConfig() {
 
     const meEmpresa = document.getElementById('edit-f-empresa');
     if (meEmpresa) meEmpresa.innerHTML = '<option value="">Selecione</option>' + STATE.empresas.map(e => `<option value="${e.cod}">${e.cod} - ${e.descricao}</option>`).join('');
+    
+    // Preencher Selects no Modal  // Particular
+    const selPart = document.getElementById('particular-oper');
+    if (selPart) {
+      const opts = STATE.operadores.map(o => `<option value="${o.cod}">${o.cod} - ${o.nome}</option>`).join('');
+      selPart.innerHTML = '<option value="">— Selecione um operador —</option>' + opts;
+    }
   } catch (err) {
     showToast('Erro ao carregar configurações de campo', 'err');
   }
@@ -139,7 +146,7 @@ function setPage(p) {
     digitador: 'Digitador',
     banco: 'Base de Dados de Tempos',
     paradas: 'Análise de Paradas',
-    particular: 'Análise Particular',
+    particular: 'Eficiência do Operador',
     config: 'Configurações',
     auditoria: 'Últimas Alterações'
   }[p] || p;
@@ -147,7 +154,15 @@ function setPage(p) {
   if (p === 'banco') renderDatabase();
   if (p === 'paradas') renderParadas();
   if (p === 'config') renderConfigTable();
-  if (p === 'particular') renderParticular();
+  if (p === 'particular') {
+    // Garantir que o select está preenchido
+    const sel = document.getElementById('particular-oper');
+    if (sel && sel.options.length <= 1) {
+      const opts = STATE.operadores.map(o => `<option value="${o.cod}">${o.cod} - ${o.nome}</option>`).join('');
+      sel.innerHTML = '<option value="">— Selecione um operador —</option>' + opts;
+    }
+    renderParticular();
+  }
   if (p === 'auditoria') renderAuditoria();
 }
 
@@ -546,7 +561,7 @@ async function renderConfigTable() {
       <div class="config-row">
         <span><strong>${o.cod}</strong> - ${o.nome}</span>
         <div>
-          ${AUTH.isMinCoordenador() ? `<button class="btn-edit" style="background:transparent;border:none;cursor:pointer;margin-right:10px;font-size:14px;" onclick="editConfig('operadores', '${o.id}', '${o.nome}', 'nome')" title="Editar">✏️</button>` : ''}
+          ${AUTH.isMinCoordenador() ? `<button class="btn-edit" style="background:transparent;border:none;cursor:pointer;margin-right:10px;font-size:14px;" onclick="editConfig('operadores', '${o.id}')" title="Editar">✏️</button>` : ''}
           <button class="btn-del" onclick="removeConfig('operadores', '${o.id}')">×</button>
         </div>
       </div>
@@ -557,7 +572,7 @@ async function renderConfigTable() {
       <div class="config-row">
         <span><strong>${m.cod}</strong> - ${m.nome}</span>
         <div>
-          ${AUTH.isMinCoordenador() ? `<button class="btn-edit" style="background:transparent;border:none;cursor:pointer;margin-right:10px;font-size:14px;" onclick="editConfig('maquinas', '${m.id}', '${m.nome}', 'nome')" title="Editar">✏️</button>` : ''}
+          ${AUTH.isMinCoordenador() ? `<button class="btn-edit" style="background:transparent;border:none;cursor:pointer;margin-right:10px;font-size:14px;" onclick="editConfig('maquinas', '${m.id}')" title="Editar">✏️</button>` : ''}
           <button class="btn-del" onclick="removeConfig('maquinas', '${m.id}')">×</button>
         </div>
       </div>
@@ -568,7 +583,7 @@ async function renderConfigTable() {
       <div class="config-row">
         <span><strong>${p.cod}</strong> - ${p.descricao} <small>(${p.tipo})</small></span>
         <div>
-          ${AUTH.isMinCoordenador() ? `<button class="btn-edit" style="background:transparent;border:none;cursor:pointer;margin-right:10px;font-size:14px;" onclick="editConfig('paradas_motivos', '${p.id}', '${p.descricao}', 'descricao')" title="Editar">✏️</button>` : ''}
+          ${AUTH.isMinCoordenador() ? `<button class="btn-edit" style="background:transparent;border:none;cursor:pointer;margin-right:10px;font-size:14px;" onclick="editConfig('paradas_motivos', '${p.id}')" title="Editar">✏️</button>` : ''}
           <button class="btn-del" onclick="removeConfig('paradas_motivos', '${p.id}')">×</button>
         </div>
       </div>
@@ -581,7 +596,7 @@ async function renderConfigTable() {
       <div class="config-row">
         <span><strong>${s.cod}</strong> - ${s.descricao}${s.meta ? ' <span style="color:var(--accent);font-size:12px;margin-left:8px;">Meta: <strong>${s.meta}%</strong></span>' : ''}</span>
         <div>
-          ${AUTH.isMinCoordenador() ? `<button class="btn-edit" style="background:transparent;border:none;cursor:pointer;margin-right:10px;font-size:14px;" onclick="editConfig('setores', '${s.id}', '${s.descricao}', 'descricao')" title="Editar">✏️</button>` : ''}
+          ${AUTH.isMinCoordenador() ? `<button class="btn-edit" style="background:transparent;border:none;cursor:pointer;margin-right:10px;font-size:14px;" onclick="editConfig('setores', '${s.id}')" title="Editar">✏️</button>` : ''}
           <button class="btn-del" onclick="removeConfig('setores', '${s.id}')">×</button>
         </div>
       </div>
@@ -594,7 +609,7 @@ async function renderConfigTable() {
       <div class="config-row">
         <span><strong>${e.cod}</strong> - ${e.descricao}</span>
         <div>
-          ${AUTH.isMinCoordenador() ? `<button class="btn-edit" style="background:transparent;border:none;cursor:pointer;margin-right:10px;font-size:14px;" onclick="editConfig('empresas', '${e.id}', '${e.descricao}', 'descricao')" title="Editar">✏️</button>` : ''}
+          ${AUTH.isMinCoordenador() ? `<button class="btn-edit" style="background:transparent;border:none;cursor:pointer;margin-right:10px;font-size:14px;" onclick="editConfig('empresas', '${e.id}')" title="Editar">✏️</button>` : ''}
           <button class="btn-del" onclick="removeConfig('empresas', '${e.id}')">×</button>
         </div>
       </div>
@@ -602,19 +617,91 @@ async function renderConfigTable() {
   }
 }
 
-async function editConfig(table, id, currentVal, fieldName) {
-  const newVal = prompt(`Editar ${fieldName}:`, currentVal);
-  if (newVal !== null && newVal.trim() !== '') {
-    const payload = {};
-    payload[fieldName] = newVal.toUpperCase();
-    const { error } = await sb.from(table).update(payload).eq('id', id);
-    if (!error) {
-      showToast('Alterado com sucesso!', 'ok');
-      await loadConfig();
-      renderConfigTable();
-    } else {
-      showToast('Erro ao alterar: ' + error.message, 'err');
-    }
+async function editConfig(table, id) {
+  let item = null;
+  if (table === 'operadores') item = STATE.operadores.find(x => x.id === id);
+  if (table === 'maquinas') item = STATE.maquinas.find(x => x.id === id);
+  if (table === 'paradas_motivos') item = STATE.paradas.find(x => x.id === id);
+  if (table === 'setores') item = STATE.setores.find(x => x.id === id);
+  if (table === 'empresas') item = STATE.empresas.find(x => x.id === id);
+
+  if (!item) return;
+
+  document.getElementById('edit-conf-id').value = id;
+  document.getElementById('edit-conf-table').value = table;
+  document.getElementById('edit-conf-cod').value = item.cod;
+  
+  const descInput = document.getElementById('edit-conf-desc');
+  const labelDesc = document.getElementById('edit-conf-label-desc');
+  const extraFields = document.getElementById('edit-conf-extra-fields');
+  
+  extraFields.innerHTML = '';
+  descInput.value = item.nome || item.descricao || '';
+  labelDesc.textContent = (table === 'operadores' || table === 'maquinas') ? 'Nome do Recurso' : 'Descrição';
+
+  if (table === 'paradas_motivos') {
+    extraFields.innerHTML = `
+      <div class="form-group mt-16">
+        <label>Tipo de Parada</label>
+        <select id="edit-conf-tipo">
+          <option value="PROG" ${item.tipo === 'PROG' ? 'selected' : ''}>PROG</option>
+          <option value="NÃO PROG" ${item.tipo === 'NÃO PROG' ? 'selected' : ''}>NÃO PROG</option>
+        </select>
+      </div>
+    `;
+  }
+
+  if (table === 'setores') {
+    extraFields.innerHTML = `
+      <div class="form-group mt-16">
+        <label>Meta de Eficiência (%)</label>
+        <input type="number" id="edit-conf-meta" value="${item.meta || ''}" min="0" max="100">
+      </div>
+    `;
+  }
+
+  document.getElementById('modal-edit-config').classList.add('active');
+}
+
+function closeConfigModal() {
+  document.getElementById('modal-edit-config').classList.remove('active');
+}
+
+async function saveEditConfig() {
+  const id = document.getElementById('edit-conf-id').value;
+  const table = document.getElementById('edit-conf-table').value;
+  const desc = document.getElementById('edit-conf-desc').value.trim();
+
+  if (!desc) {
+    showToast('A descrição não pode estar vazia!', 'err');
+    return;
+  }
+
+  const payload = {};
+  if (table === 'operadores' || table === 'maquinas') {
+    payload.nome = desc.toUpperCase();
+  } else {
+    payload.descricao = desc.toUpperCase();
+  }
+
+  if (table === 'paradas_motivos') {
+    payload.tipo = document.getElementById('edit-conf-tipo').value;
+  }
+
+  if (table === 'setores') {
+    payload.meta = parseFloat(document.getElementById('edit-conf-meta').value) || null;
+  }
+
+  showToast('Salvando alteração...', 'ok');
+  const { error } = await sb.from(table).update(payload).eq('id', id);
+
+  if (!error) {
+    showToast('Atualizado com sucesso!', 'ok');
+    closeConfigModal();
+    await loadConfig();
+    renderConfigTable();
+  } else {
+    showToast('Erro ao salvar: ' + error.message, 'err');
   }
 }
 
