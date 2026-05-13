@@ -125,6 +125,7 @@ nav { flex: 1; padding: 24px 16px; }
 .kpi.danger .val { color: var(--danger); }
 
 /* GRID */
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
 .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
 .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 24px; }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
@@ -316,7 +317,7 @@ input:-webkit-autofill:focus {
 }
 
 @media (max-width: 1100px) {
-  .grid-5, .grid-4 { grid-template-columns: 1fr 1fr; }
+  .grid-5, .grid-4, .grid-3 { grid-template-columns: 1fr 1fr; }
   .grid-6 { grid-template-columns: repeat(3, 1fr); }
 }
 
@@ -324,7 +325,7 @@ input:-webkit-autofill:focus {
   #sidebar { width: 70px; }
   #sidebar .nav-item span, #sidebar .logo h1, #sidebar .logo p, #sidebar .sidebar-footer { display: none; }
   #main { margin-left: 70px; }
-  .grid-4, .grid-2 { grid-template-columns: 1fr; }
+  .grid-5, .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; }
   .topbar { padding: 15px 20px; }
   .page { padding: 20px; }
 }
