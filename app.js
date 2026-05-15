@@ -57,6 +57,9 @@ window.onload = async () => {
   if (localStorage.getItem('soma-theme') === 'light') {
     document.body.classList.add('light-theme');
   }
+
+  // Inicializar formulário do digitador com padrões
+  clearForm();
 };
 
 async function loadConfig() {
@@ -209,7 +212,8 @@ function renderDatabase() {
     const mOper = !fOper || r.cod_oper === fOper;
     const mSetor = !fSetor || r.cod_setor === fSetor;
     const mData = !fData || r.data === fData;
-    return mPeca && mOper && mSetor && mData;
+    const mTipo = r.tipo_registro === 'PRODUCAO'; // Mostrar apenas projetos
+    return mPeca && mOper && mSetor && mData && mTipo;
   });
 
   if (filtered.length === 0) {
@@ -251,10 +255,6 @@ function renderDatabase() {
         <td>${fmtHora(hDisp)}</td>
         <td>${fmtHora(r.h_programada || 0)}</td>
         <td style="font-weight:bold; color:var(--accent)">${fmtHora(hTrab)}</td>
-        <td>${r.cod_parada || '-'}</td>
-        <td>${r.desc_parada || '-'}</td>
-        <td>${fmtHora(r.h_parada || 0)}</td>
-        <td><span class="status-badge ${r.tipo_parada === 'PROG' ? 'status-padrao' : 'status-gargalo'}">${r.tipo_parada || '-'}</span></td>
         <td style="white-space:nowrap;">
           ${canDelete ? `
             <button class="btn-icon edit" onclick="editRegistro('${r.id}')" title="Editar">✏️</button>
@@ -1149,8 +1149,8 @@ function clearForm() {
   document.getElementById('pecas-body').innerHTML = '';
   document.getElementById('paradas-body').innerHTML = '';
   document.getElementById('obs-body').innerHTML = '';
-  document.getElementById('f-h-inicio').value = '';
-  document.getElementById('f-h-fim').value = '';
+  document.getElementById('f-h-inicio').value = '07:30';
+  document.getElementById('f-h-fim').value = '17:18';
   addPecaRow();
   calcResumo();
 }
