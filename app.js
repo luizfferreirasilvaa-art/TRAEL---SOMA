@@ -924,8 +924,14 @@ function calcTurnHours() {
   if (start && end) {
     const s = start.split(':');
     const e = end.split(':');
-    const diff = (parseInt(e[0]) + parseInt(e[1]) / 60) - (parseInt(s[0]) + parseInt(s[1]) / 60);
-    // hDisp não é mais exibido mas pode ser mantido internamente se necessário
+    let diff = (parseInt(e[0]) + parseInt(e[1]) / 60) - (parseInt(s[0]) + parseInt(s[1]) / 60);
+    
+    // Tratamento para virada de dia (ex: turno noturno)
+    if (diff < 0) diff += 24;
+
+    const hprogEl = document.getElementById('f-hprog');
+    if (hprogEl) hprogEl.value = fmtHora(diff);
+    
     calcResumo();
   }
 }
