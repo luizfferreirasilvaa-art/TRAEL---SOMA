@@ -289,7 +289,7 @@ async function editRegistro(id) {
   document.getElementById('edit-f-codmaq').value = r.cod_maq || '';
   document.getElementById('edit-f-codsetor').value = r.cod_setor || '';
   document.getElementById('edit-f-empresa').value = r.cod_empresa || '';
-  document.getElementById('edit-f-hprog').value = fmtHora(r.h_programada || 8.8);
+  document.getElementById('edit-f-hprog').value = fmtHora(r.h_programada || 9.8);
 
   // 3. Limpar e Preencher Tabelas
   const pecasBody = document.getElementById('edit-pecas-body');
@@ -1274,7 +1274,7 @@ function renderAll() {
 
   // Regra 4: Projeção de Entrega
   const proj = document.getElementById('projecao-entrega');
-  const remTime = Math.max(0, 8.8 - totalHProd); // Tempo restante no turno (em decimal p/ cálculo)
+  const remTime = Math.max(0, 9.8 - totalHProd); // Tempo restante no turno (em decimal p/ cálculo)
   const estimated = Math.floor(globalEfic > 0 ? (totalProduced / (totalHProd || 1)) * remTime : 0);
   proj.innerHTML = `<strong>${estimated} peças</strong> estimadas para o restante do turno baseado no ritmo atual.`;
 }
@@ -1330,7 +1330,7 @@ async function simulateData() {
       data: today, turno: 'D', cod_oper: op.cod, desc_oper: op.nome,
       cod_maq: mq.cod, desc_maq: mq.nome, tipo_registro: 'PARADA',
       cod_parada: mot.cod, desc_parada: mot.descricao, h_parada: parseFloat(duration),
-      h_inicio: '07:30', h_fim: '17:18', h_disponivel: 9.8, h_programada: 8.8,
+      h_inicio: '07:30', h_fim: '17:18', h_disponivel: 9.8, h_programada: 9.8,
       cod_peca: '-', qtd: 0, tp_padrao: 0, h_produtiva: 0, mes: 5,
       tipo_parada: mot.tipo
     });
@@ -1350,7 +1350,7 @@ async function simulateData() {
       data: today, turno: 'D', cod_oper: op.cod, desc_oper: op.nome,
       cod_maq: mq.cod, desc_maq: mq.nome, tipo_registro: 'PRODUCAO',
       cod_parada: '-', desc_parada: '-', h_parada: 0,
-      h_inicio: '07:30', h_fim: '17:18', h_disponivel: 9.8, h_programada: 8.8,
+      h_inicio: '07:30', h_fim: '17:18', h_disponivel: 9.8, h_programada: 9.8,
       cod_peca: peca, qtd: qtd, tp_padrao: parseFloat(tp), h_produtiva: parseFloat(hProd),
       mes: 5, eficiencia: (Math.random() * 20 + 80).toFixed(1)
     });
