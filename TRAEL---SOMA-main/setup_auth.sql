@@ -151,9 +151,6 @@ CREATE POLICY "paradas_delete_manager" ON paradas_motivos
 --     (Desative "Confirm email" em Auth → Email antes de criar)
 --
 --     E-mail                       Senha    Nome para Exibição
---     admin.trael@trael.cto        183729   Luiz Silva
---     admin.trael@trael.coo        183729   Erlan Redez
---     admin.trael@trael.ceo        183729   Matheus Inhan
 --     gerencia@trael.com           123456   Gerência Operacional
 --     soma@trael.com               123456   Operacional de Campo
 --
