@@ -130,6 +130,7 @@ nav { flex: 1; padding: 24px 16px; }
 .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 24px; }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
 .grid-6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 15px; }
+.grid-7 { display: grid; grid-template-columns: repeat(7, 1fr); gap: 15px; }
 
 /* TABLES */
 .table-wrap { overflow-x: auto; margin-top: 10px; }
@@ -336,6 +337,7 @@ input:-webkit-autofill:focus {
 @media (max-width: 1100px) {
   .grid-4, .grid-3 { grid-template-columns: 1fr 1fr; }
   .grid-6 { grid-template-columns: repeat(3, 1fr); }
+  .grid-7 { grid-template-columns: repeat(3, 1fr); }
 }
 
 @media (max-width: 768px) {
@@ -346,3 +348,46 @@ input:-webkit-autofill:focus {
   .topbar { padding: 15px 20px; }
   .page { padding: 20px; }
 }
+
+/* OEE BADGE PANEL */
+.oee-badge {
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+.oee-badge-label {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.oee-badge-val {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+#oee-badge-util .oee-badge-val { color: var(--accent3); }
+#oee-badge-efic .oee-badge-val { color: var(--accent); }
+#oee-badge-prod .oee-badge-val { color: var(--warn); }
+.oee-badge-bar {
+  height: 5px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.oee-badge-fill {
+  height: 100%;
+  border-radius: 10px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.oee-badge-fill.util { background: var(--accent3); }
+.oee-badge-fill.efic { background: var(--accent); }
+.oee-badge-fill.prod { background: var(--warn); }
+
+/* kpi.success */
+.kpi.success .val { color: var(--success); text-shadow: 0 0 20px rgba(0,255,204,0.3); }

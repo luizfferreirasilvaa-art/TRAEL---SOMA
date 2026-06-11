@@ -41,6 +41,9 @@
       <div class="nav-item" onclick="setPage('particular')" id="nav-particular">
         <span class="nav-icon">👤</span><span>Eficiência do Operador</span>
       </div>
+      <div class="nav-item" onclick="setPage('relatorios')" id="nav-relatorios">
+        <span class="nav-icon">📑</span><span>Relatórios</span>
+      </div>
       <div class="nav-item" onclick="setPage('config')" id="nav-config">
         <span class="nav-icon">⚙️</span><span>Configurações</span>
       </div>
@@ -117,6 +120,63 @@
         </div>
       </div>
 
+      <!-- GRÁFICOS PRINCIPAIS -->
+      <div class="grid-2 mb-24">
+
+        <!-- HISTOGRAMA: Eficiência por Operador -->
+        <div class="card" style="position:relative;">
+          <div class="card-title">📊 HISTOGRAMA — EFICIÊNCIA POR OPERADOR</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;font-family:var(--font-mono);">
+            Meta: <span id="dash-meta-label" style="color:var(--warn);">80%</span> &nbsp;|&nbsp;
+            <span style="color:var(--accent);">■</span> Acima &nbsp;
+            <span style="color:var(--danger);">■</span> Abaixo
+          </div>
+          <canvas id="chart-efic-oper" height="240"></canvas>
+          <div id="chart-efic-empty" style="display:none;text-align:center;padding:60px 0;color:var(--text-muted);font-size:13px;">
+            <em>Sem dados para exibir no período.</em>
+          </div>
+        </div>
+
+        <!-- ROSCA OEE + RADAR rápido -->
+        <div class="card" style="position:relative;">
+          <div class="card-title">🎯 PAINEL OEE — VISÃO RÁPIDA</div>
+          <div style="display:flex;align-items:center;gap:24px;height:calc(100% - 44px);">
+            <div style="flex:1;min-width:0;">
+              <canvas id="chart-oee-doughnut" height="220"></canvas>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:16px;min-width:140px;">
+              <div class="oee-badge" id="oee-badge-util">
+                <div class="oee-badge-label">UTILIZAÇÃO</div>
+                <div class="oee-badge-val" id="oee-val-util">0%</div>
+                <div class="oee-badge-bar"><div class="oee-badge-fill util" id="oee-fill-util" style="width:0%"></div></div>
+              </div>
+              <div class="oee-badge" id="oee-badge-efic">
+                <div class="oee-badge-label">EFICIÊNCIA</div>
+                <div class="oee-badge-val" id="oee-val-efic">0%</div>
+                <div class="oee-badge-bar"><div class="oee-badge-fill efic" id="oee-fill-efic" style="width:0%"></div></div>
+              </div>
+              <div class="oee-badge" id="oee-badge-prod">
+                <div class="oee-badge-label">PRODUTIVIDADE</div>
+                <div class="oee-badge-val" id="oee-val-prod">0%</div>
+                <div class="oee-badge-bar"><div class="oee-badge-fill prod" id="oee-fill-prod" style="width:0%"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LINHA DO TEMPO DIÁRIA -->
+      <div class="card mb-24">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div class="card-title" style="margin-bottom:0;">📅 HORAS PRODUTIVAS x DISPONÍVEIS — DIA A DIA</div>
+          <div style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono);">
+            Últ. 30 dias de atividade
+          </div>
+        </div>
+        <canvas id="chart-diario" height="110"></canvas>
+      </div>
+
+      <!-- TABELA E ALERTAS (linha 2) -->
       <div class="grid-2">
         <div class="card">
           <div class="card-title">TABELA COMPARATIVA DE TEMPOS</div>
@@ -153,6 +213,7 @@
         </div>
       </div>
     </div>
+
 
     <!-- DIGITADOR -->
     <div class="page" id="page-digitador">
@@ -205,8 +266,8 @@
               <input type="time" id="f-h-fim" onchange="calcTurnHours()" value="17:18">
             </div>
             <div class="form-group">
-              <label>Horas Prog.</label>
-              <input type="text" id="f-hprog" value="09:48" oninput="calcResumo()" placeholder="HH:MM" class="mono">
+              <label>Horas Disp.</label>
+              <input type="text" id="f-hdisp" value="09:48" oninput="calcResumo()" placeholder="HH:MM" class="mono" title="Hora Disponível">
             </div>
             <div class="form-group">
               <label>Setor</label>
@@ -295,31 +356,35 @@
 
         <div class="form-section">
           <h3>📊 RESUMO DO TURNO</h3>
-          <div class="grid-6 mt-16"
+          <div class="grid-7 mt-16"
             style="background:var(--surface); padding:15px; border-radius:8px; border:1px solid var(--border);">
             <div class="res-item">
               <div class="val" id="res-qtd">0</div>
-              <div class="lbl">Qtd Total Produzida</div>
+              <div class="lbl">Qtd Produzida</div>
             </div>
             <div class="res-item">
-              <div class="val" id="res-hprod">0.0000</div>
-              <div class="lbl">Horas Produtivas</div>
+              <div class="val" id="res-hprog">0.0000</div>
+              <div class="lbl">Hrs Programadas</div>
             </div>
             <div class="res-item">
               <div class="val" id="res-hpar">0.0000</div>
-              <div class="lbl">Horas Paradas</div>
+              <div class="lbl">Hrs Paradas</div>
             </div>
             <div class="res-item">
               <div class="val" id="res-htrab">0.0000</div>
-              <div class="lbl">Horas Trabalhadas</div>
+              <div class="lbl">Hrs Trabalhadas</div>
+            </div>
+            <div class="res-item">
+              <div class="val" id="res-util" style="color:var(--accent3)">0.0%</div>
+              <div class="lbl">Utilização</div>
             </div>
             <div class="res-item">
               <div class="val" id="res-efic" style="color:var(--accent)">0.0%</div>
               <div class="lbl">Eficiência</div>
             </div>
             <div class="res-item">
-              <div class="val" id="res-util" style="color:var(--accent3)">0.0%</div>
-              <div class="lbl">Utilização</div>
+              <div class="val" id="res-prod" style="color:var(--warn)">0.0%</div>
+              <div class="lbl">Produtividade</div>
             </div>
           </div>
         </div>
@@ -714,8 +779,8 @@
             </select>
           </div>
           <div class="form-group">
-            <label>Horas Prog.</label>
-            <input type="text" id="edit-f-hprog" oninput="calcEditResumo()" class="mono" placeholder="HH:MM">
+            <label>Horas Disp.</label>
+            <input type="text" id="edit-f-hdisp" oninput="calcEditResumo()" class="mono" placeholder="HH:MM" title="Hora Disponível">
           </div>
         </div>
       </div>
@@ -808,6 +873,164 @@
       </div>
     </div>
   </div>
+
+  <!-- PAGE: RELATORIOS -->
+  <div class="page" id="page-relatorios">
+
+    <!-- FILTROS DO RELATORIO -->
+    <div class="card mb-24" style="padding:18px 28px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+          <div>
+            <label style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono);display:block;margin-bottom:6px;">MÊS</label>
+            <select id="rel-filter-mes" onchange="renderRelatorio()" style="width:130px;">
+              <option value="">Todos</option>
+              <option value="1">Janeiro</option>
+              <option value="2">Fevereiro</option>
+              <option value="3">Março</option>
+              <option value="4">Abril</option>
+              <option value="5">Maio</option>
+              <option value="6">Junho</option>
+              <option value="7">Julho</option>
+              <option value="8">Agosto</option>
+              <option value="9">Setembro</option>
+              <option value="10">Outubro</option>
+              <option value="11">Novembro</option>
+              <option value="12">Dezembro</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono);display:block;margin-bottom:6px;">EMPRESA</label>
+            <select id="rel-filter-empresa" onchange="renderRelatorio()" style="width:180px;">
+              <option value="">Todas</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono);display:block;margin-bottom:6px;">TURNO</label>
+            <select id="rel-filter-turno" onchange="renderRelatorio()" style="width:130px;">
+              <option value="">Todos</option>
+              <option value="D">D – Diurno</option>
+              <option value="N">N – Noturno</option>
+              <option value="M">M – Misto</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono);display:block;margin-bottom:6px;">METAS</label>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input type="number" id="rel-meta-util" value="80" min="0" max="100" style="width:70px;" onchange="renderRelatorio()" title="Meta Utilização %">
+              <span style="font-size:11px;color:var(--text-muted);">Util%</span>
+              <input type="number" id="rel-meta-efic" value="80" min="0" max="100" style="width:70px;" onchange="renderRelatorio()" title="Meta Eficiência %">
+              <span style="font-size:11px;color:var(--text-muted);">Efic%</span>
+              <input type="number" id="rel-meta-prod" value="64" min="0" max="100" style="width:70px;" onchange="renderRelatorio()" title="Meta Produtividade %">
+              <span style="font-size:11px;color:var(--text-muted);">Prod%</span>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn-outline btn-sm" onclick="renderRelatorio()">🔄 Atualizar</button>
+          <button class="btn btn-outline btn-sm" onclick="printRelatorio()">🖨️ Imprimir</button>
+          <button class="btn btn-primary btn-sm" onclick="exportRelatorioCSV()">⬇ Exportar CSV</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI HEADER -->
+    <div class="grid-4 mb-24" id="rel-kpis">
+      <div class="card kpi accent">
+        <div class="card-title">EFICIÊNCIA MÉDIA</div>
+        <div class="val" id="rel-kpi-efic">0%</div>
+        <div class="lbl">Fabricado x Prog. Líquido</div>
+      </div>
+      <div class="card kpi" style="background:var(--card);">
+        <div class="card-title">UTILIZAÇÃO MÉDIA</div>
+        <div class="val" id="rel-kpi-util" style="color:var(--accent3);">0%</div>
+        <div class="lbl">H. Trabalhada / H. Prog.</div>
+      </div>
+      <div class="card kpi warn">
+        <div class="card-title">PRODUTIVIDADE MÉDIA</div>
+        <div class="val" id="rel-kpi-prod">0%</div>
+        <div class="lbl">H. Produtiva / H. Prog.</div>
+      </div>
+      <div class="card kpi blue">
+        <div class="card-title">VOL. TOTAL PRODUZIDO</div>
+        <div class="val" id="rel-kpi-qtd">0</div>
+        <div class="lbl">Peças no Período</div>
+      </div>
+    </div>
+
+    <!-- RELATORIO DIRETIVO POR SETOR -->
+    <div class="card mb-24" id="rel-diretivo-wrap">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <div class="card-title" style="margin-bottom:0;">📋 RELATÓRIO DIRETIVO — SETORES</div>
+        <div id="rel-periodo-label" style="font-size:12px;color:var(--text-muted);"></div>
+      </div>
+      <div class="table-wrap">
+        <table class="paradas-table rel-diretivo-table" id="rel-setor-table">
+          <thead>
+            <tr style="background:rgba(0,255,204,0.05);">
+              <th style="min-width:130px;">SETOR</th>
+              <th style="text-align:center;">UTILIZAÇÃO</th>
+              <th style="text-align:center;">EFICIÊNCIA</th>
+              <th style="text-align:center;">PRODUTIVIDADE</th>
+              <th style="text-align:center;">QTD PROD.</th>
+              <th style="text-align:center;">H. DISPON.</th>
+              <th style="text-align:center;">H. PROG.</th>
+              <th style="text-align:center;">H. TRAB.</th>
+              <th style="text-align:center;">H. PRODUTIVA</th>
+              <th style="min-width:200px;">PRINCIPAIS PARADAS</th>
+              <th style="text-align:center;min-width:100px;">T. PARADA (h)</th>
+            </tr>
+          </thead>
+          <tbody id="rel-setor-body">
+            <tr><td colspan="11" style="text-align:center;padding:40px;color:var(--text-muted);"><em>Selecione filtros e clique em Atualizar.</em></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- GRAFICO DE BARRAS + PARADAS -->
+    <div class="grid-2 mb-24">
+      <div class="card">
+        <div class="card-title">📊 EFICIÊNCIA POR SETOR</div>
+        <canvas id="rel-chart-efic" height="220"></canvas>
+      </div>
+      <div class="card">
+        <div class="card-title">⏱ DISTRIBUIÇÃO DE PARADAS (TOP 10)</div>
+        <canvas id="rel-chart-paradas" height="220"></canvas>
+      </div>
+    </div>
+
+    <!-- TABELA DE PARADAS DETALHADA -->
+    <div class="card mb-24">
+      <div class="card-title">🔍 RANKING DE PARADAS DO PERÍODO</div>
+      <div class="table-wrap">
+        <table class="paradas-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>CÓD. PARADA</th>
+              <th>DESCRIÇÃO</th>
+              <th>TIPO</th>
+              <th style="text-align:center;">OCORRÊNCIAS</th>
+              <th style="text-align:right;">TOTAL HORAS</th>
+              <th style="text-align:right;">MÉDIA/OCORR.</th>
+            </tr>
+          </thead>
+          <tbody id="rel-paradas-body">
+            <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted);"><em>Aguardando dados...</em></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- EVOLUCAO DIA-A-DIA -->
+    <div class="card">
+      <div class="card-title">📅 OCUPAÇÃO DIA-A-DIA (HORAS PRODUTIVAS x DISPONÍVEIS)</div>
+      <canvas id="rel-chart-diario" height="140"></canvas>
+    </div>
+
+  </div>
+  <!-- /PAGE: RELATORIOS -->
 
   <div id="toast"></div>
 

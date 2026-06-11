@@ -48,11 +48,17 @@ const AUTH = {
 
   async _loadProfile(user) {
     this.user = user;
-    const { data } = await sb.from('user_profiles').select('*').eq('id', user.id).single();
-    if (!data) {
-      // Fallback: usar localStorage (preenchido no login.html)
+    const { data, error } = await sb.from('user_profiles').select('*').eq('id', user.id).single();
+    if (error || !data) {
+      if (error) {
+        console.error("Erro ao carregar perfil do Supabase:", error.message || error);
+      }
+      // Fallback seguro: usar localStorage (validando se a role é existente no ROLE_META)
+      const savedRole = localStorage.getItem('soma-role');
+      const roleFallback = (savedRole && ROLE_META[savedRole]) ? savedRole : 'alimentador';
+      
       this.profile = {
-        role: localStorage.getItem('soma-role') || 'alimentador',
+        role: roleFallback,
         display_name: localStorage.getItem('soma-name') || user.email
       };
     } else {

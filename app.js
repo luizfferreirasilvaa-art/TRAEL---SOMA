@@ -48,6 +48,15 @@ window.onload = async () => {
   showToast('Sincronizando com a base de dados de tempos...', 'ok');
   await loadConfig();
   await loadData();
+
+  // Definir filtros padrão iniciais (BOBINAGEM AT e DISTRIBUIÇÃO)
+  const fSetor = document.getElementById('dash-filter-setor');
+  if (fSetor) fSetor.value = '02'; // "BOBINAGEM AT"
+  const fTurno = document.getElementById('dash-filter-turno');
+  if (fTurno) fTurno.value = '';   // "Todos Turnos"
+  const fEmpresa = document.getElementById('dash-filter-empresa');
+  if (fEmpresa) fEmpresa.value = '1'; // "DISTRIBUIÇÃO"
+
   renderAll();
 
   // 2. Aplicar regras de acesso baseadas no perfil
@@ -361,14 +370,19 @@ function fillEditParadaRow(el) {
 }
 
 function calcEditResumo() {
-  const hProg = parseHora(document.getElementById('edit-f-hprog').value) || 0;
+  const hDisp = parseHora(document.getElementById('edit-f-hdisp').value) || 0;
   
-  let totalHPar = 0;
+  let totalHParProg = 0;
+  let totalHParNaoProg = 0;
   document.querySelectorAll('#edit-paradas-body tr').forEach(tr => {
-    totalHPar += parseHora(tr.querySelector('.parada-horas').value) || 0;
+    const h = parseHora(tr.querySelector('.parada-horas').value) || 0;
+    const tipo = tr.querySelector('.parada-tipo').value || '';
+    if (tipo === 'PROG' || tipo === 'Programada') totalHParProg += h;
+    else totalHParNaoProg += h;
   });
 
-  const hTrab = Math.max(0, hProg - totalHPar);
+  const hProg = Math.max(0, hDisp - totalHParProg);
+  const hTrab = Math.max(0, hProg - totalHParNaoProg);
 
   document.querySelectorAll('#edit-pecas-body tr').forEach(tr => {
     const qtd = parseFloat(tr.querySelector('.peca-qtd').value) || 0;
@@ -419,7 +433,7 @@ async function handleUpdate() {
     cod_maq: document.getElementById('edit-f-codmaq').value,
     cod_setor: document.getElementById('edit-f-codsetor').value,
     cod_empresa: document.getElementById('edit-f-empresa').value,
-    h_programada: parseHora(document.getElementById('edit-f-hprog').value) || 0
+    h_programada: parseHora(document.getElementById('edit-f-hdisp').value) || 0
   };
 
   // Nomes de descrição (busca no STATE)
@@ -429,12 +443,16 @@ async function handleUpdate() {
   base.desc_empresa = STATE.empresas.find(e => e.cod === base.cod_empresa)?.descricao || '';
 
   // 2. Coletar linhas
-  const hProg = base.h_programada;
-  let totalHPar = 0;
+  const hDisp = base.h_programada;
+  let totalHParProg = 0;
+  let totalHParNaoProg = 0;
   const paradas = [];
   document.querySelectorAll('#edit-paradas-body tr').forEach(tr => {
     const h = parseHora(tr.querySelector('.parada-horas').value) || 0;
-    totalHPar += h;
+    const tipo = tr.querySelector('.parada-tipo').value || '';
+    if (tipo === 'PROG' || tipo === 'Programada') totalHParProg += h;
+    else totalHParNaoProg += h;
+    
     paradas.push({
       ...base,
       cod_parada: tr.querySelector('.parada-cod').value,
@@ -445,7 +463,8 @@ async function handleUpdate() {
     });
   });
 
-  const hTrab = Math.max(0, hProg - totalHPar);
+  const hProg = Math.max(0, hDisp - totalHParProg);
+  const hTrab = Math.max(0, hProg - totalHParNaoProg);
   const pecas = [];
   document.querySelectorAll('#edit-pecas-body tr').forEach(tr => {
     const qtd = parseFloat(tr.querySelector('.peca-qtd').value) || 0;
@@ -929,8 +948,8 @@ function calcTurnHours() {
     // Tratamento para virada de dia (ex: turno noturno)
     if (diff < 0) diff += 24;
 
-    const hprogEl = document.getElementById('f-hprog');
-    if (hprogEl) hprogEl.value = fmtHora(diff);
+    const hdispEl = document.getElementById('f-hdisp');
+    if (hdispEl) hdispEl.value = fmtHora(diff);
     
     calcResumo();
   }
@@ -1010,23 +1029,37 @@ function calcResumo() {
   });
 
   // Cálculo de paradas
-  let totalHPar = 0;
+  let totalHParProg = 0;
+  let totalHParNaoProg = 0;
   document.querySelectorAll('#paradas-body tr').forEach(tr => {
     const h = parseHora(tr.querySelector('.parada-horas').value) || 0;
-    totalHPar += h;
+    const tipo = tr.querySelector('.parada-tipo').value || '';
+    if (tipo === 'PROG' || tipo === 'Programada') totalHParProg += h;
+    else totalHParNaoProg += h;
   });
 
-  const hProg = parseHora(document.getElementById('f-hprog').value) || 0;
-  const hTrab = Math.max(0, hProg - totalHPar);
+  const totalHPar = totalHParProg + totalHParNaoProg;
+  const hDisp = parseHora(document.getElementById('f-hdisp').value) || 0;
+  const hProg = Math.max(0, hDisp - totalHParProg);
+  const hTrab = Math.max(0, hProg - totalHParNaoProg);
+  
   const efic = hTrab > 0 ? (totalHProd / hTrab) * 100 : 0;
   const util = hProg > 0 ? (hTrab / hProg) * 100 : 0;
+  const prod = hProg > 0 ? (totalHProd / hProg) * 100 : 0;
 
   document.getElementById('res-qtd').textContent = totalQtd;
   document.getElementById('res-hprod').textContent = fmtHora(totalHProd);
   document.getElementById('res-hpar').textContent = fmtHora(totalHPar);
   document.getElementById('res-htrab').textContent = fmtHora(hTrab);
+  
+  const elProg = document.getElementById('res-hprog');
+  if(elProg) elProg.textContent = fmtHora(hProg);
+
   document.getElementById('res-efic').textContent = efic.toFixed(1) + '%';
   document.getElementById('res-util').textContent = util.toFixed(1) + '%';
+  
+  const elProd = document.getElementById('res-prod');
+  if(elProd) elProd.textContent = prod.toFixed(1) + '%';
 }
 
 
@@ -1044,7 +1077,7 @@ async function saveRegisto() {
   const descEmpresa = STATE.empresas.find(e => e.cod === codEmpresa)?.descricao || '';
   const hInicio = document.getElementById('f-h-inicio').value;
   const hFim = document.getElementById('f-h-fim').value;
-  const hProg = parseHora(document.getElementById('f-hprog').value) || 0;
+  const hDisp = parseHora(document.getElementById('f-hdisp').value) || 0;
 
   if (!data || !codOper || !codMaq) {
     showToast('Atenção: Cabeçalho incompleto!', 'err');
@@ -1061,11 +1094,16 @@ async function saveRegisto() {
   }
 
   // Pré-cálculo das horas de parada para eficiência correta (REGRA 1.1)
-  let totalHPar = 0;
+  let totalHParProg = 0;
+  let totalHParNaoProg = 0;
   paradaRows.forEach(tr => {
-    totalHPar += parseHora(tr.querySelector('.parada-horas').value) || 0;
+    const h = parseHora(tr.querySelector('.parada-horas').value) || 0;
+    const tipo = tr.querySelector('.parada-tipo').value || '';
+    if (tipo === 'PROG' || tipo === 'Programada') totalHParProg += h;
+    else totalHParNaoProg += h;
   });
-  const hTrab = Math.max(0, hProg - totalHPar);
+  const hProg = Math.max(0, hDisp - totalHParProg);
+  const hTrab = Math.max(0, hProg - totalHParNaoProg);
 
   const base = {
     data,
@@ -1081,7 +1119,7 @@ async function saveRegisto() {
     desc_empresa: descEmpresa || null,
     h_inicio: hInicio || null,
     h_fim: hFim || null,
-    h_programada: hProg,
+    h_programada: hDisp, // Mantemos hDisp aqui para retrocompatibilidade no renderAll
     // Auditoria de quem salvou
     created_by_name: (typeof AUTH !== 'undefined' && AUTH.name) ? AUTH.name : 'Sistema',
     created_by_role: (typeof AUTH !== 'undefined' && AUTH.role) ? AUTH.role : 'desconhecido',
@@ -1199,17 +1237,20 @@ function renderAll() {
   const totalProduced = pecas.reduce((sum, p) => sum + (parseFloat(p.qtd) || 0), 0);
   const totalHProd = pecas.reduce((sum, p) => sum + (parseFloat(p.h_produtiva) || 0), 0);
   
-  // Cálculo de Horas Totais (Programadas e Paradas) por turno único no dashboard (REGRA: H. Trabalhadas = H. Prog - Paradas)
+  // Cálculo de Horas Totais por turno único no dashboard
   const shiftKeys = [...new Set(filteredRecords.map(r => `${r.data}_${r.turno}_${r.cod_oper}`))];
-  let dashHProg = 0;
-  let dashHPar = 0;
+  let dashHDisp = 0;
+  let dashHParProg = 0;
+  let dashHParNaoProg = 0;
   shiftKeys.forEach(key => {
     const sRecs = filteredRecords.filter(r => `${r.data}_${r.turno}_${r.cod_oper}` === key);
-    dashHProg += sRecs[0]?.h_programada || 0;
-    dashHPar += sRecs.filter(r => r.tipo_registro === 'PARADA').reduce((s, r) => s + (r.h_parada || 0), 0);
+    dashHDisp += sRecs[0]?.h_programada || 0; // h_programada armazena a Hora Disponível (retrocompatibilidade)
+    dashHParProg += sRecs.filter(r => r.tipo_registro === 'PARADA' && (r.tipo_parada === 'PROG' || r.tipo_parada === 'Programada')).reduce((s, r) => s + (r.h_parada || 0), 0);
+    dashHParNaoProg += sRecs.filter(r => r.tipo_registro === 'PARADA' && r.tipo_parada !== 'PROG' && r.tipo_parada !== 'Programada').reduce((s, r) => s + (r.h_parada || 0), 0);
   });
 
-  const dashHTrab = Math.max(0, dashHProg - dashHPar);
+  const dashHProg = Math.max(0, dashHDisp - dashHParProg);
+  const dashHTrab = Math.max(0, dashHProg - dashHParNaoProg);
   const timeBalance = totalHProd - dashHTrab; // Positivo = Ganho, Negativo = Perda (Residual)
 
   // Eficiência Global (REGRA 1.1: Tempo Padrão vs Tempo Real Líquido)
@@ -1283,7 +1324,288 @@ function renderAll() {
   const remTime = Math.max(0, 9.8 - totalHProd); // Tempo restante no turno (em decimal p/ cálculo)
   const estimated = Math.floor(globalEfic > 0 ? (totalProduced / (totalHProd || 1)) * remTime : 0);
   proj.innerHTML = `<strong>${estimated} peças</strong> estimadas para o restante do turno baseado no ritmo atual.`;
+
+  // ── GRÁFICOS DO DASHBOARD ──
+  renderDashboardCharts(filteredRecords, pecas, paradas, globalEfic, dashHProg, dashHTrab, totalHProd, dashHDisp);
 }
+
+// Instâncias de gráficos (para destruir antes de recriar)
+let _chartEficOper = null;
+let _chartOeeDoughnut = null;
+let _chartDiario = null;
+
+function renderDashboardCharts(filteredRecords, pecas, paradas, globalEfic, dashHProg, dashHTrab, totalHProd, dashHDisp) {
+  const META = 80;
+
+  // ─── 1. HISTOGRAMA — Eficiência por Operador ───────────────────────────────
+  const operMap = {};
+  pecas.forEach(r => {
+    const key = r.cod_oper || 'N/A';
+    if (!operMap[key]) operMap[key] = { hProd: 0, hTrab: 0, nome: r.desc_oper || key };
+    operMap[key].hProd += parseFloat(r.h_produtiva) || 0;
+  });
+
+  // Calcular horas trabalhadas por operador (usando chaves de turno)
+  const allOperKeys = [...new Set(filteredRecords.map(r => r.cod_oper).filter(Boolean))];
+  allOperKeys.forEach(codOper => {
+    const operRecs = filteredRecords.filter(r => r.cod_oper === codOper);
+    const turnoKeys = [...new Set(operRecs.map(r => `${r.data}_${r.turno}`))];
+    let hDisp = 0, hParProg = 0, hParNaoProg = 0;
+    turnoKeys.forEach(tk => {
+      const sRecs = operRecs.filter(r => `${r.data}_${r.turno}` === tk);
+      hDisp += sRecs[0]?.h_programada || 0;
+      hParProg += sRecs.filter(r => r.tipo_registro === 'PARADA' && (r.tipo_parada === 'PROG' || r.tipo_parada === 'Programada')).reduce((s, r) => s + (r.h_parada || 0), 0);
+      hParNaoProg += sRecs.filter(r => r.tipo_registro === 'PARADA' && r.tipo_parada !== 'PROG' && r.tipo_parada !== 'Programada').reduce((s, r) => s + (r.h_parada || 0), 0);
+    });
+    if (operMap[codOper]) {
+      operMap[codOper].hTrab = Math.max(0, (hDisp - hParProg) - hParNaoProg);
+    }
+  });
+
+  const operLabels = Object.keys(operMap);
+  const eficByOper = operLabels.map(k => {
+    const { hProd, hTrab } = operMap[k];
+    return hTrab > 0 ? parseFloat(((hProd / hTrab) * 100).toFixed(1)) : 0;
+  });
+  const barColors = eficByOper.map(v => v >= META
+    ? 'rgba(0,255,204,0.8)' : 'rgba(255,77,109,0.8)');
+  const barBorders = eficByOper.map(v => v >= META ? '#00ffcc' : '#ff4d6d');
+
+  const canvasEfic = document.getElementById('chart-efic-oper');
+  const emptyMsg = document.getElementById('chart-efic-empty');
+  if (operLabels.length === 0) {
+    if (canvasEfic) canvasEfic.style.display = 'none';
+    if (emptyMsg) emptyMsg.style.display = 'block';
+  } else {
+    if (canvasEfic) canvasEfic.style.display = 'block';
+    if (emptyMsg) emptyMsg.style.display = 'none';
+    if (_chartEficOper) _chartEficOper.destroy();
+    _chartEficOper = new Chart(canvasEfic, {
+      type: 'bar',
+      data: {
+        labels: operLabels.map(k => operMap[k].nome),
+        datasets: [{
+          label: 'Eficiência (%)',
+          data: eficByOper,
+          backgroundColor: barColors,
+          borderColor: barBorders,
+          borderWidth: 1,
+          borderRadius: 6,
+          borderSkipped: false,
+        }]
+      },
+      options: {
+        responsive: true,
+        animation: { duration: 800, easing: 'easeOutQuart' },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => ` ${ctx.parsed.y.toFixed(1)}% eficiência`
+            }
+          },
+          annotation: undefined
+        },
+        scales: {
+          x: {
+            grid: { color: 'rgba(255,255,255,0.04)' },
+            ticks: { color: '#7c7c8a', font: { size: 11, family: "'Space Mono'" }, maxRotation: 30 }
+          },
+          y: {
+            min: 0, max: 120,
+            grid: { color: 'rgba(255,255,255,0.04)' },
+            ticks: {
+              color: '#7c7c8a', font: { size: 11 },
+              callback: v => v + '%'
+            }
+          }
+        }
+      },
+      plugins: [{
+        afterDraw(chart) {
+          const { ctx, chartArea: { left, right }, scales: { y } } = chart;
+          const metaY = y.getPixelForValue(META);
+          ctx.save();
+          ctx.setLineDash([6, 4]);
+          ctx.strokeStyle = 'rgba(255,180,68,0.7)';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(left, metaY);
+          ctx.lineTo(right, metaY);
+          ctx.stroke();
+          ctx.fillStyle = 'rgba(255,180,68,0.9)';
+          ctx.font = "bold 10px 'Space Mono'";
+          ctx.fillText(`META ${META}%`, right - 72, metaY - 5);
+          ctx.restore();
+        }
+      }]
+    });
+  }
+
+  // ─── 2. ROSCA OEE ──────────────────────────────────────────────────────────
+  const util  = dashHProg  > 0 ? Math.min(100, (dashHTrab  / dashHProg)  * 100) : 0;
+  const efic  = dashHTrab  > 0 ? Math.min(100, (totalHProd / dashHTrab)  * 100) : 0;
+  const prod  = dashHProg  > 0 ? Math.min(100, (totalHProd / dashHProg)  * 100) : 0;
+
+  // Atualiza badges laterais
+  const setOeeBadge = (id, fillId, val) => {
+    const el = document.getElementById(id);
+    const fill = document.getElementById(fillId);
+    if (el) el.textContent = val.toFixed(1) + '%';
+    if (fill) fill.style.width = Math.min(val, 100) + '%';
+  };
+  setOeeBadge('oee-val-util', 'oee-fill-util', util);
+  setOeeBadge('oee-val-efic', 'oee-fill-efic', efic);
+  setOeeBadge('oee-val-prod', 'oee-fill-prod', prod);
+
+  const canvasDoughnut = document.getElementById('chart-oee-doughnut');
+  if (canvasDoughnut) {
+    if (_chartOeeDoughnut) _chartOeeDoughnut.destroy();
+    _chartOeeDoughnut = new Chart(canvasDoughnut, {
+      type: 'doughnut',
+      data: {
+        labels: ['Utilização', 'Eficiência', 'Produtividade'],
+        datasets: [{
+          data: [util, efic, prod],
+          backgroundColor: [
+            'rgba(77,148,255,0.85)',
+            'rgba(0,255,204,0.85)',
+            'rgba(255,180,68,0.85)'
+          ],
+          borderColor: ['#4d94ff', '#00ffcc', '#ffb444'],
+          borderWidth: 2,
+          hoverOffset: 8
+        }]
+      },
+      options: {
+        responsive: true,
+        cutout: '62%',
+        animation: { animateRotate: true, duration: 900 },
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              color: '#7c7c8a', font: { size: 11, family: "'Space Mono'" },
+              padding: 16, boxWidth: 12, boxHeight: 12
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: ctx => ` ${ctx.label}: ${ctx.parsed.toFixed(1)}%`
+            }
+          }
+        }
+      },
+      plugins: [{
+        id: 'centerText',
+        afterDraw(chart) {
+          const { ctx, chartArea: { left, top, width, height } } = chart;
+          const cx = left + width / 2;
+          const cy = top + height / 2 - 10;
+          const oeeVal = (util * efic * prod / 10000).toFixed(1);
+          ctx.save();
+          ctx.textAlign = 'center';
+          ctx.fillStyle = '#e1e1e6';
+          ctx.font = "bold 24px 'Space Mono'";
+          ctx.fillText(oeeVal + '%', cx, cy);
+          ctx.fillStyle = '#7c7c8a';
+          ctx.font = "10px 'Inter'";
+          ctx.fillText('OEE GLOBAL', cx, cy + 18);
+          ctx.restore();
+        }
+      }]
+    });
+  }
+
+  // ─── 3. LINHA DIÁRIA — Horas Produtivas x Disponíveis ──────────────────────
+  const dailyMap = {};
+  filteredRecords.forEach(r => {
+    if (!r.data) return;
+    if (!dailyMap[r.data]) dailyMap[r.data] = { hDisp: 0, hProd: 0 };
+  });
+  // Horas disponíveis por turno único no dia
+  const dailyShiftKeys = [...new Set(filteredRecords.map(r => `${r.data}__${r.turno}__${r.cod_oper}`))];
+  dailyShiftKeys.forEach(key => {
+    const [dt] = key.split('__');
+    const sRecs = filteredRecords.filter(r => `${r.data}__${r.turno}__${r.cod_oper}` === key);
+    if (dailyMap[dt]) dailyMap[dt].hDisp += sRecs[0]?.h_programada || 0;
+  });
+  pecas.forEach(r => {
+    if (r.data && dailyMap[r.data]) dailyMap[r.data].hProd += parseFloat(r.h_produtiva) || 0;
+  });
+  const sortedDays = Object.keys(dailyMap).sort().slice(-30);
+  const dayLabels = sortedDays.map(d => {
+    const [, m, day] = d.split('-');
+    return `${day}/${m}`;
+  });
+
+  const canvasDiario = document.getElementById('chart-diario');
+  if (canvasDiario) {
+    if (_chartDiario) _chartDiario.destroy();
+    _chartDiario = new Chart(canvasDiario, {
+      type: 'bar',
+      data: {
+        labels: dayLabels,
+        datasets: [
+          {
+            type: 'bar',
+            label: 'H. Disponível',
+            data: sortedDays.map(d => parseFloat((dailyMap[d].hDisp).toFixed(2))),
+            backgroundColor: 'rgba(77,148,255,0.25)',
+            borderColor: 'rgba(77,148,255,0.6)',
+            borderWidth: 1,
+            borderRadius: 4,
+            yAxisID: 'y',
+            order: 2
+          },
+          {
+            type: 'line',
+            label: 'H. Produtiva',
+            data: sortedDays.map(d => parseFloat((dailyMap[d].hProd).toFixed(2))),
+            borderColor: '#00ffcc',
+            backgroundColor: 'rgba(0,255,204,0.12)',
+            borderWidth: 2,
+            pointRadius: 3,
+            pointBackgroundColor: '#00ffcc',
+            fill: true,
+            tension: 0.4,
+            yAxisID: 'y',
+            order: 1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        interaction: { mode: 'index', intersect: false },
+        animation: { duration: 700 },
+        plugins: {
+          legend: {
+            labels: { color: '#7c7c8a', font: { size: 11 }, boxWidth: 14 }
+          },
+          tooltip: {
+            callbacks: {
+              label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}h`
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: 'rgba(255,255,255,0.03)' },
+            ticks: { color: '#7c7c8a', font: { size: 10 }, maxRotation: 45 }
+          },
+          y: {
+            grid: { color: 'rgba(255,255,255,0.04)' },
+            ticks: {
+              color: '#7c7c8a', font: { size: 10 },
+              callback: v => v + 'h'
+            }
+          }
+        }
+      }
+    });
+  }
+}
+
 
 function fillOper() {
   const cod = document.getElementById('f-codoper').value;
@@ -1411,22 +1733,27 @@ function renderParticular() {
   const allOperRecords = STATE.registros.filter(r => r.cod_oper === codOper);
   const prodRecords = allOperRecords.filter(r => r.tipo_registro === 'PRODUCAO');
 
-  // H. Programadas e Paradas — soma única por turno/dia (REGRA: Horas Trabalhadas = H. Prog - Paradas)
+  // H. Disponíveis e Paradas — soma única por turno/dia
   const turnosKeys = [...new Set(allOperRecords.map(r => `${r.data}_${r.turno}`))];
-  let totalHProg = 0;
-  let totalHPar = 0;
+  let totalHDisp = 0;
+  let totalHParProg = 0;
+  let totalHParNaoProg = 0;
 
   turnosKeys.forEach(key => {
     const shiftRecords = allOperRecords.filter(r => `${r.data}_${r.turno}` === key);
     if (shiftRecords.length > 0) {
-      totalHProg += shiftRecords[0].h_programada || 0;
-      totalHPar += shiftRecords
-        .filter(r => r.tipo_registro === 'PARADA')
+      totalHDisp += shiftRecords[0].h_programada || 0; // h_programada armazena Hora Disponível
+      totalHParProg += shiftRecords
+        .filter(r => r.tipo_registro === 'PARADA' && (r.tipo_parada === 'PROG' || r.tipo_parada === 'Programada'))
+        .reduce((sum, r) => sum + (r.h_parada || 0), 0);
+      totalHParNaoProg += shiftRecords
+        .filter(r => r.tipo_registro === 'PARADA' && r.tipo_parada !== 'PROG' && r.tipo_parada !== 'Programada')
         .reduce((sum, r) => sum + (r.h_parada || 0), 0);
     }
   });
 
-  const totalHTrab = Math.max(0, totalHProg - totalHPar);
+  const totalHProg = Math.max(0, totalHDisp - totalHParProg);
+  const totalHTrab = Math.max(0, totalHProg - totalHParNaoProg);
   const totalHProd = prodRecords.reduce((s, r) => s + (r.h_produtiva || 0), 0);
   
   // Meta vem do setor do operador
@@ -1645,5 +1972,12 @@ window.editRegistro = editRegistro;
 window.editObs = editObs;
 window.closeEditModal = closeEditModal;
 window.saveEditRegistro = saveEditRegistro;
+window.renderDashboardCharts = renderDashboardCharts;
+window.renderRelatorio = renderRelatorio;
+window.printRelatorio = printRelatorio;
+window.exportRelatorioCSV = exportRelatorioCSV;
+window.handleUpdate = handleUpdate;
+window.saveEditConfig = saveEditConfig;
+window.closeConfigModal = closeConfigModal;
 
 console.log('SOMA: Sistema inicializado com sucesso. v2.2 — RBAC ativo.');
