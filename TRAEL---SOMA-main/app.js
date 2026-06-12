@@ -188,6 +188,7 @@ function setPage(p) {
     banco: 'Base de Dados',
     paradas: 'Análise de Paradas',
     particular: 'Eficiência do Operador',
+    relatorios: 'Relatórios Gerenciais',
     config: 'Configurações',
     auditoria: 'Últimas Alterações'
   }[p] || p;
@@ -1953,6 +1954,7 @@ let _chartRelParadas = null;
 let _chartRelDiario = null;
 
 function renderRelatorio() {
+  try {
   const fMes = document.getElementById('rel-filter-mes')?.value;
   const fEmpresa = document.getElementById('rel-filter-empresa')?.value;
   const fTurno = document.getElementById('rel-filter-turno')?.value;
@@ -2026,7 +2028,7 @@ function renderRelatorio() {
     const setProd = hProg > 0 ? (s.hProd / hProg) * 100 : 0;
 
     labelsSetores.push(s.desc);
-    dadosEficSetores.push(setEfic.toFixed(1));
+    dadosEficSetores.push(parseFloat(setEfic.toFixed(1)));
 
     const parMap = {};
     s.paradas.forEach(p => parMap[p.desc] = (parMap[p.desc] || 0) + p.h);
@@ -2049,6 +2051,8 @@ function renderRelatorio() {
 
   if (!tbHtml) tbHtml = '<tr><td colspan="11" style="text-align:center;color:var(--text-muted)">Sem dados para o período.</td></tr>';
   if (tbSetores) tbSetores.innerHTML = tbHtml;
+
+  console.log('[SOMA Relatório] records:', records.length, '| setores:', Object.keys(setoresMap).length, '| paradas:', paradas.length);
 
   const allParMap = {};
   paradas.forEach(p => {
@@ -2125,6 +2129,10 @@ function renderRelatorio() {
       },
       options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0 } } }
     });
+  }
+  } catch(e) {
+    console.error('[SOMA] Erro em renderRelatorio:', e);
+    showToast('Erro ao gerar relatório. Verifique o console.', 'err');
   }
 }
 
