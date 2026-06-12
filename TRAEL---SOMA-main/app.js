@@ -205,6 +205,7 @@ function setPage(p) {
     renderParticular();
   }
   if (p === 'auditoria') renderAuditoria();
+  if (p === 'relatorios') renderRelatorio();
 }
 
 function renderDatabase() {
@@ -1396,6 +1397,7 @@ function renderDashboardCharts(filteredRecords, pecas, paradas, globalEfic, dash
       },
       options: {
         responsive: true,
+        maintainAspectRatio: false,
         animation: { duration: 800, easing: 'easeOutQuart' },
         plugins: {
           legend: { display: false },
@@ -1479,6 +1481,7 @@ function renderDashboardCharts(filteredRecords, pecas, paradas, globalEfic, dash
       },
       options: {
         responsive: true,
+        maintainAspectRatio: false,
         cutout: '62%',
         animation: { animateRotate: true, duration: 900 },
         plugins: {
@@ -1576,6 +1579,7 @@ function renderDashboardCharts(filteredRecords, pecas, paradas, globalEfic, dash
       },
       options: {
         responsive: true,
+        maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
         animation: { duration: 700 },
         plugins: {
@@ -1943,6 +1947,213 @@ async function renderAuditoria() {
   } catch (err) {
     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--danger);">Erro ao carregar auditoria.</td></tr>';
   }
+}
+let _chartRelEfic = null;
+let _chartRelParadas = null;
+let _chartRelDiario = null;
+
+function renderRelatorio() {
+  const fMes = document.getElementById('rel-filter-mes')?.value;
+  const fEmpresa = document.getElementById('rel-filter-empresa')?.value;
+  const fTurno = document.getElementById('rel-filter-turno')?.value;
+
+  const mUtil = parseFloat(document.getElementById('rel-meta-util')?.value) || 80;
+  const mEfic = parseFloat(document.getElementById('rel-meta-efic')?.value) || 80;
+  const mProd = parseFloat(document.getElementById('rel-meta-prod')?.value) || 64;
+
+  let records = STATE.registros;
+  if (fMes) records = records.filter(r => String(r.mes) === String(fMes));
+  if (fEmpresa) records = records.filter(r => r.cod_empresa === fEmpresa);
+  if (fTurno) records = records.filter(r => r.turno === fTurno);
+
+  const pecas = records.filter(r => r.tipo_registro === 'PRODUCAO');
+  const paradas = records.filter(r => r.tipo_registro === 'PARADA');
+
+  const shiftKeys = [...new Set(records.map(r => `${r.data}_${r.turno}_${r.cod_oper}`))];
+  let globalHDisp = 0, globalHParProg = 0, globalHParNaoProg = 0;
+
+  shiftKeys.forEach(key => {
+    const sRecs = records.filter(r => `${r.data}_${r.turno}_${r.cod_oper}` === key);
+    globalHDisp += sRecs[0]?.h_programada || 0;
+    globalHParProg += sRecs.filter(r => r.tipo_registro === 'PARADA' && (r.tipo_parada === 'PROG' || r.tipo_parada === 'Programada')).reduce((s, r) => s + (r.h_parada || 0), 0);
+    globalHParNaoProg += sRecs.filter(r => r.tipo_registro === 'PARADA' && r.tipo_parada !== 'PROG' && r.tipo_parada !== 'Programada').reduce((s, r) => s + (r.h_parada || 0), 0);
+  });
+
+  const globalHProg = Math.max(0, globalHDisp - globalHParProg);
+  const globalHTrab = Math.max(0, globalHProg - globalHParNaoProg);
+  const totalProduced = pecas.reduce((s, p) => s + (parseFloat(p.qtd) || 0), 0);
+  const totalHProd = pecas.reduce((s, p) => s + (parseFloat(p.h_produtiva) || 0), 0);
+
+  const efic = globalHTrab > 0 ? (totalHProd / globalHTrab) * 100 : 0;
+  const util = globalHProg > 0 ? (globalHTrab / globalHProg) * 100 : 0;
+  const prod = globalHProg > 0 ? (totalHProd / globalHProg) * 100 : 0;
+
+  document.getElementById('rel-kpi-efic').textContent = efic.toFixed(1) + '%';
+  document.getElementById('rel-kpi-util').textContent = util.toFixed(1) + '%';
+  document.getElementById('rel-kpi-prod').textContent = prod.toFixed(1) + '%';
+  document.getElementById('rel-kpi-qtd').textContent = totalProduced;
+
+  document.getElementById('rel-periodo-label').textContent = `Período Analisado: ${records.length} registros`;
+
+  const setoresMap = {};
+  records.forEach(r => {
+    const cod = r.cod_setor || 'N/A';
+    if (!setoresMap[cod]) {
+      setoresMap[cod] = { desc: r.desc_setor || cod, hDisp: 0, hParProg: 0, hParNaoProg: 0, hProd: 0, qtd: 0, shiftKeys: new Set(), paradas: [] };
+    }
+    const s = setoresMap[cod];
+    const shiftKey = `${r.data}_${r.turno}_${r.cod_oper}`;
+    if (!s.shiftKeys.has(shiftKey)) { s.shiftKeys.add(shiftKey); s.hDisp += r.h_programada || 0; }
+    if (r.tipo_registro === 'PRODUCAO') { s.hProd += parseFloat(r.h_produtiva) || 0; s.qtd += parseFloat(r.qtd) || 0; }
+    else if (r.tipo_registro === 'PARADA') {
+      const hPar = parseFloat(r.h_parada) || 0;
+      s.paradas.push({ cod: r.cod_parada, desc: r.desc_parada, h: hPar });
+      if (r.tipo_parada === 'PROG' || r.tipo_parada === 'Programada') s.hParProg += hPar;
+      else s.hParNaoProg += hPar;
+    }
+  });
+
+  const tbSetores = document.getElementById('rel-setor-body');
+  let tbHtml = '';
+  const labelsSetores = [], dadosEficSetores = [];
+
+  Object.keys(setoresMap).forEach(cod => {
+    const s = setoresMap[cod];
+    const hProg = Math.max(0, s.hDisp - s.hParProg);
+    const hTrab = Math.max(0, hProg - s.hParNaoProg);
+    const setEfic = hTrab > 0 ? (s.hProd / hTrab) * 100 : 0;
+    const setUtil = hProg > 0 ? (hTrab / hProg) * 100 : 0;
+    const setProd = hProg > 0 ? (s.hProd / hProg) * 100 : 0;
+
+    labelsSetores.push(s.desc);
+    dadosEficSetores.push(setEfic.toFixed(1));
+
+    const parMap = {};
+    s.paradas.forEach(p => parMap[p.desc] = (parMap[p.desc] || 0) + p.h);
+    const topParadasStr = Object.keys(parMap).sort((a,b) => parMap[b] - parMap[a]).slice(0,2).map(k => `${k} (${parMap[k].toFixed(2)}h)`).join(', ');
+
+    tbHtml += `<tr>
+      <td><strong>${s.desc}</strong></td>
+      <td style="text-align:center; color:${setUtil >= mUtil ? 'var(--success)' : 'var(--danger)'}">${setUtil.toFixed(1)}%</td>
+      <td style="text-align:center; color:${setEfic >= mEfic ? 'var(--success)' : 'var(--danger)'}">${setEfic.toFixed(1)}%</td>
+      <td style="text-align:center; color:${setProd >= mProd ? 'var(--success)' : 'var(--danger)'}">${setProd.toFixed(1)}%</td>
+      <td style="text-align:center;">${s.qtd.toLocaleString()}</td>
+      <td style="text-align:center;">${s.hDisp.toFixed(2)}h</td>
+      <td style="text-align:center;">${hProg.toFixed(2)}h</td>
+      <td style="text-align:center;">${hTrab.toFixed(2)}h</td>
+      <td style="text-align:center;">${s.hProd.toFixed(2)}h</td>
+      <td style="font-size:11px;">${topParadasStr || '-'}</td>
+      <td style="text-align:center;">${(s.hParProg + s.hParNaoProg).toFixed(2)}</td>
+    </tr>`;
+  });
+
+  if (!tbHtml) tbHtml = '<tr><td colspan="11" style="text-align:center;color:var(--text-muted)">Sem dados para o período.</td></tr>';
+  if (tbSetores) tbSetores.innerHTML = tbHtml;
+
+  const allParMap = {};
+  paradas.forEach(p => {
+    const key = p.cod_parada + ' - ' + p.desc_parada;
+    if (!allParMap[key]) allParMap[key] = { cod: p.cod_parada, desc: p.desc_parada, tipo: p.tipo_parada, count: 0, totalH: 0 };
+    allParMap[key].count++; allParMap[key].totalH += parseFloat(p.h_parada) || 0;
+  });
+  const sortedParadas = Object.values(allParMap).sort((a, b) => b.totalH - a.totalH);
+  
+  const tbParadas = document.getElementById('rel-paradas-body');
+  let parHtml = '';
+  sortedParadas.slice(0,10).forEach((p, idx) => {
+    parHtml += `<tr>
+      <td>${idx + 1}</td>
+      <td><strong>${p.cod}</strong></td>
+      <td>${p.desc}</td>
+      <td><span class="badge ${p.tipo === 'PROG' || p.tipo === 'Programada' ? 'ok' : 'err'}">${p.tipo || 'NÃO PROG'}</span></td>
+      <td style="text-align:center;">${p.count}</td>
+      <td style="text-align:right;color:var(--danger)">${p.totalH.toFixed(2)}h</td>
+      <td style="text-align:right;color:var(--text-muted)">${(p.totalH / p.count).toFixed(2)}h</td>
+    </tr>`;
+  });
+  if (!parHtml) parHtml = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">Nenhuma parada registrada.</td></tr>';
+  if (tbParadas) tbParadas.innerHTML = parHtml;
+
+  const ctxEfic = document.getElementById('rel-chart-efic');
+  if (ctxEfic) {
+    if (_chartRelEfic) _chartRelEfic.destroy();
+    _chartRelEfic = new Chart(ctxEfic, {
+      type: 'bar',
+      data: {
+        labels: labelsSetores,
+        datasets: [{ label: 'Eficiência %', data: dadosEficSetores, backgroundColor: dadosEficSetores.map(v => v >= mEfic ? 'rgba(0,255,204,0.6)' : 'rgba(255,77,109,0.6)'), borderColor: dadosEficSetores.map(v => v >= mEfic ? '#00ffcc' : '#ff4d6d'), borderWidth: 1 }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 120 } }, plugins: { legend: { display: false } } }
+    });
+  }
+
+  const ctxParadas = document.getElementById('rel-chart-paradas');
+  if (ctxParadas) {
+    if (_chartRelParadas) _chartRelParadas.destroy();
+    _chartRelParadas = new Chart(ctxParadas, {
+      type: 'doughnut',
+      data: {
+        labels: sortedParadas.slice(0,5).map(p => p.desc),
+        datasets: [{ data: sortedParadas.slice(0,5).map(p => p.totalH.toFixed(2)), backgroundColor: ['#ff4d6d', '#ffb444', '#00ffcc', '#4d94ff', '#9933ff'], borderWidth: 2 }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '50%', plugins: { legend: { position: 'right', labels: { color: '#ccc' } } } }
+    });
+  }
+
+  const dailyMap = {};
+  records.forEach(r => { if (!r.data) return; if (!dailyMap[r.data]) dailyMap[r.data] = { hDisp: 0, hProd: 0 }; });
+  const dailyShiftKeys = [...new Set(records.map(r => `${r.data}__${r.turno}__${r.cod_oper}`))];
+  dailyShiftKeys.forEach(key => {
+    const [dt] = key.split('__');
+    const sRecs = records.filter(r => `${r.data}__${r.turno}__${r.cod_oper}` === key);
+    if (dailyMap[dt]) dailyMap[dt].hDisp += sRecs[0]?.h_programada || 0;
+  });
+  pecas.forEach(r => { if (r.data && dailyMap[r.data]) dailyMap[r.data].hProd += parseFloat(r.h_produtiva) || 0; });
+  
+  const sortedDays = Object.keys(dailyMap).sort();
+  const ctxDiario = document.getElementById('rel-chart-diario');
+  if (ctxDiario) {
+    if (_chartRelDiario) _chartRelDiario.destroy();
+    _chartRelDiario = new Chart(ctxDiario, {
+      type: 'line',
+      data: {
+        labels: sortedDays.map(d => d.split('-').slice(1).reverse().join('/')),
+        datasets: [
+          { label: 'H. Disponível', data: sortedDays.map(d => dailyMap[d].hDisp.toFixed(2)), borderColor: '#4d94ff', backgroundColor: 'rgba(77,148,255,0.1)', fill: true, tension: 0.3 },
+          { label: 'H. Produtiva', data: sortedDays.map(d => dailyMap[d].hProd.toFixed(2)), borderColor: '#00ffcc', backgroundColor: 'rgba(0,255,204,0.1)', fill: true, tension: 0.3 }
+        ]
+      },
+      options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0 } } }
+    });
+  }
+}
+
+function printRelatorio() {
+  window.print();
+}
+
+function exportRelatorioCSV() {
+  const fMes = document.getElementById('rel-filter-mes')?.value;
+  const fEmpresa = document.getElementById('rel-filter-empresa')?.value;
+  const fTurno = document.getElementById('rel-filter-turno')?.value;
+  let records = STATE.registros;
+  if (fMes) records = records.filter(r => String(r.mes) === String(fMes));
+  if (fEmpresa) records = records.filter(r => r.cod_empresa === fEmpresa);
+  if (fTurno) records = records.filter(r => r.turno === fTurno);
+  
+  if (records.length === 0) {
+    showToast('Sem dados para exportar.', 'err');
+    return;
+  }
+  
+  const headers = Object.keys(records[0]).join(',');
+  const rows = records.map(r => Object.values(r).map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\\n');
+  const blob = new Blob([headers + '\\n' + rows], { type: 'text/csv' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.setAttribute('href', url);
+  a.setAttribute('download', 'relatorio_soma.csv');
+  a.click();
 }
 
 window.simulateData = simulateData;
